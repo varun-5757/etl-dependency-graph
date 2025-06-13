@@ -5,6 +5,7 @@ from pyvis.network import Network
 import streamlit as st
 import streamlit.components.v1 as components
 import tempfile
+import json
 
 st.set_page_config(layout="wide")
 st.title("ETL Dependency Graph Viewer")
@@ -58,39 +59,29 @@ selected_edges = get_subgraph(g, selected_node, direction="downstream" if direct
 
 # Pyvis graph
 net = Network(height="600px", width="100%", directed=True)
-net.set_options("""
-var options = {
-  nodes: {
-    size: 15,
-    font: {
-      size: 14
-    }
-  },
-  edges: {
-    arrows: {
-      to: {
-        enabled: true
-      }
+
+# Set options using valid JSON
+graph_options = {
+    "nodes": {
+        "size": 15,
+        "font": {"size": 14}
     },
-    font: {
-      size: 12,
-      align: "middle"
-    }
-  },
-  physics: {
-    enabled: true,
-    solver: "forceAtlas2Based",
-    forceAtlas2Based: {
-      gravitationalConstant: -50,
-      springLength: 100,
-      springConstant: 0.05
+    "edges": {
+        "arrows": {"to": {"enabled": True}},
+        "font": {"size": 12, "align": "middle"}
     },
-    stabilization: {
-      iterations: 100
+    "physics": {
+        "enabled": True,
+        "solver": "forceAtlas2Based",
+        "forceAtlas2Based": {
+            "gravitationalConstant": -50,
+            "springLength": 100,
+            "springConstant": 0.05
+        },
+        "stabilization": {"iterations": 100}
     }
-  }
 }
-""")
+net.set_options(json.dumps(graph_options))
 
 for src, tgt, job in edges:
     net.add_node(src, label=src)
