@@ -111,14 +111,23 @@ for src, tgt, job in selected_edges:
         net.add_edge(src, tgt, label=job, color="red")
 
 # Render HTML in Streamlit
+html_content = ""
 with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp_file:
     net.save_graph(tmp_file.name)
     with open(tmp_file.name, 'r', encoding='utf-8') as f:
-        html = f.read()
+        html_content = f.read()
     os.unlink(tmp_file.name)
-    components.html(html, height=650, scrolling=True)
+
+if html_content:
+    components.html(html_content, height=650, scrolling=True)
 
 # Show filtered data
-filtered_df = df[df.apply(lambda row: row['source'] in filtered_nodes and row['target'] in filtered_nodes, axis=1)]
-st.subheader("Filtered ETL Mapping Table")
-st.dataframe(filtered_df)
+if not filtered_nodes:
+    st.warning("No connected nodes found for the selected input.")
+else:
+    filtered_df = df[df.apply(lambda row: row['source'] in filtered_nodes and row['target'] in filtered_nodes, axis=1)]
+    st.subheader("Filtered ETL Mapping Table")
+    st.dataframe(filtered_df)
+
+# prevent implicit Nones
+st.markdown(" ")
