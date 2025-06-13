@@ -35,11 +35,18 @@ df = df[(df['source'].astype(str).str.strip() != '') & (df['target'].astype(str)
 edges = [(row["source"], row["target"], row["job"]) for _, row in df.iterrows()]
 nodes = sorted(set(df["source"]).union(set(df["target"])) )
 
-# Sidebar filters
-valid_nodes = [n for n in nodes if isinstance(n, str) and n.strip() != '']
-st.sidebar.header("Explore Dependencies")
-selected_node = st.sidebar.selectbox("Select a table/job/report:", valid_nodes, key="node_select")
-direction = st.sidebar.radio("Dependency Direction", ["Downstream (Impact)", "Upstream (Lineage)"], key="direction_radio")
+# Sidebar filters refactored to prevent leaking None into layout
+@st.cache_data(show_spinner=False)
+def get_valid_nodes():
+    return [n for n in nodes if isinstance(n, str) and n.strip() != '']
+
+def render_sidebar():
+    st.sidebar.header("Explore Dependencies")
+    selected_node = st.sidebar.selectbox("Select a table/job/report:", get_valid_nodes(), key="node_select")
+    direction = st.sidebar.radio("Dependency Direction", ["Downstream (Impact)", "Upstream (Lineage)"], key="direction_radio")
+    return selected_node, direction
+
+selected_node, direction = render_sidebar()
 
 # Build graph
 g = nx.DiGraph()
@@ -129,5 +136,4 @@ else:
     st.subheader("Filtered ETL Mapping Table")
     st.dataframe(filtered_df)
 
-# prevent implicit Nones
 st.markdown(" ")
