@@ -91,13 +91,16 @@ def main():
     }
     net.set_options(json.dumps(graph_options))
 
+    # Step 1: Pre-add all filtered nodes with labels before adding any edges
+    for node in filtered_nodes:
+        node = str(node).strip()
+        if node and node.lower() != 'none':
+            net.add_node(node, label=node)
+
+    # Step 2: Add edges only
     for src, tgt, job in selected_edges:
         src, tgt, job = str(src).strip(), str(tgt).strip(), str(job).strip()
         if all([src, tgt, job]) and all(x.lower() != 'none' for x in [src, tgt, job]):
-            if src not in net.node_ids:
-                net.add_node(src, label=src)
-            if tgt not in net.node_ids:
-                net.add_node(tgt, label=tgt)
             net.add_edge(src, tgt, label=job, color="red")
 
     html_content = ""
