@@ -28,13 +28,16 @@ data = [
 ]
 df = pd.DataFrame(data)
 
+# Clean any None values just in case
+df = df.dropna(subset=["source", "target", "job"])
+
 edges = [(row["source"], row["target"], row["job"]) for _, row in df.iterrows()]
 nodes = sorted(set(df["source"]).union(set(df["target"])))
 
 # Sidebar filters
 with st.sidebar:
     st.header("Explore Dependencies")
-    selected_node = st.selectbox("Select a table/job/report:", nodes)
+    selected_node = st.selectbox("Select a table/job/report:", [n for n in nodes if n is not None])
     direction = st.radio("Dependency Direction", ["Downstream (Impact)", "Upstream (Lineage)"])
 
 # Build graph
@@ -100,7 +103,7 @@ net.set_options(json.dumps(graph_options))
 
 # Add only relevant nodes and edges
 for src, tgt, job in selected_edges:
-    if src is not None and tgt is not None and job is not None:
+    if all([src, tgt, job]):
         net.add_node(src, label=str(src))
         net.add_node(tgt, label=str(tgt))
         net.add_edge(src, tgt, label=str(job), color="red")
