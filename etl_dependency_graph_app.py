@@ -6,6 +6,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 import tempfile
 import json
+import os
 
 st.set_page_config(layout="wide")
 st.title("ETL Dependency Graph Viewer")
@@ -64,7 +65,7 @@ for src, tgt in selected_edges:
     filtered_nodes.add(tgt)
 
 # Pyvis graph
-net = Network(height="600px", width="100%", directed=True)
+net = Network(height="600px", width="100%", directed=True, notebook=False)
 
 # Set options using valid JSON
 graph_options = {
@@ -90,16 +91,17 @@ graph_options = {
 net.set_options(json.dumps(graph_options))
 
 # Add only relevant nodes and edges
-for src, tgt, job in edges:
-    if (src, tgt) in selected_edges:
-        net.add_node(src, label=src)
-        net.add_node(tgt, label=tgt)
-        net.add_edge(src, tgt, label=job, color="red")
+for src, tgt, job in selected_edges:
+    net.add_node(src, label=src)
+    net.add_node(tgt, label=tgt)
+    net.add_edge(src, tgt, label=job, color="red")
 
 # Render HTML in Streamlit
 with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp_file:
     net.save_graph(tmp_file.name)
-    html = open(tmp_file.name, 'r', encoding='utf-8').read()
+    with open(tmp_file.name, 'r', encoding='utf-8') as f:
+        html = f.read()
+    os.unlink(tmp_file.name)  # Clean up temp file
     components.html(html, height=650, scrolling=True)
 
 # Show filtered data
