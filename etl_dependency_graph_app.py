@@ -136,4 +136,8 @@ else:
     st.subheader("Filtered ETL Mapping Table")
     st.dataframe(filtered_df)
 
-st.markdown(" ")
+# Prevent trailing None output
+st.write("✅ App finished rendering.")
+
+if __name__ == "__main__":
+    pass
