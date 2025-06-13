@@ -34,11 +34,10 @@ df = df.dropna(subset=["source", "target", "job"])
 edges = [(row["source"], row["target"], row["job"]) for _, row in df.iterrows()]
 nodes = sorted(set(df["source"]).union(set(df["target"])))
 
-# Sidebar filters
-with st.sidebar:
-    st.header("Explore Dependencies")
-    selected_node = st.selectbox("Select a table/job/report:", [n for n in nodes if n is not None])
-    direction = st.radio("Dependency Direction", ["Downstream (Impact)", "Upstream (Lineage)"])
+# Sidebar filters (fixed None-label issue by not using 'with st.sidebar')
+st.sidebar.header("Explore Dependencies")
+selected_node = st.sidebar.selectbox("Select a table/job/report:", [n for n in nodes if n])
+direction = st.sidebar.radio("Dependency Direction", ["Downstream (Impact)", "Upstream (Lineage)"])
 
 # Build graph
 g = nx.DiGraph()
