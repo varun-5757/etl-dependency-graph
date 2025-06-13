@@ -57,6 +57,12 @@ def get_subgraph(graph, start_node, direction="downstream"):
 
 selected_edges = get_subgraph(g, selected_node, direction="downstream" if direction.startswith("Down") else "upstream")
 
+# Derive the filtered nodes from selected edges
+filtered_nodes = set()
+for src, tgt in selected_edges:
+    filtered_nodes.add(src)
+    filtered_nodes.add(tgt)
+
 # Pyvis graph
 net = Network(height="600px", width="100%", directed=True)
 
@@ -83,19 +89,20 @@ graph_options = {
 }
 net.set_options(json.dumps(graph_options))
 
+# Add only relevant nodes and edges
 for src, tgt, job in edges:
-    net.add_node(src, label=src)
-    net.add_node(tgt, label=tgt)
     if (src, tgt) in selected_edges:
+        net.add_node(src, label=src)
+        net.add_node(tgt, label=tgt)
         net.add_edge(src, tgt, label=job, color="red")
-    else:
-        net.add_edge(src, tgt, label=job, color="lightgray")
 
 # Render HTML in Streamlit
 with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp_file:
     net.save_graph(tmp_file.name)
-    components.html(open(tmp_file.name, 'r', encoding='utf-8').read(), height=650, scrolling=True)
+    html = open(tmp_file.name, 'r', encoding='utf-8').read()
+    components.html(html, height=650, scrolling=True)
 
-# Show data
-st.subheader("Underlying ETL Mapping Table")
-st.dataframe(df)
+# Show filtered data
+filtered_df = df[df.apply(lambda row: row['source'] in filtered_nodes and row['target'] in filtered_nodes, axis=1)]
+st.subheader("Filtered ETL Mapping Table")
+st.dataframe(filtered_df)
