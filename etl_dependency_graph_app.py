@@ -58,6 +58,40 @@ selected_edges = get_subgraph(g, selected_node, direction="downstream" if direct
 
 # Pyvis graph
 net = Network(height="600px", width="100%", directed=True)
+net.set_options("""
+var options = {
+  nodes: {
+    size: 15,
+    font: {
+      size: 14
+    }
+  },
+  edges: {
+    arrows: {
+      to: {
+        enabled: true
+      }
+    },
+    font: {
+      size: 12,
+      align: "middle"
+    }
+  },
+  physics: {
+    enabled: true,
+    solver: "forceAtlas2Based",
+    forceAtlas2Based: {
+      gravitationalConstant: -50,
+      springLength: 100,
+      springConstant: 0.05
+    },
+    stabilization: {
+      iterations: 100
+    }
+  }
+}
+""")
+
 for src, tgt, job in edges:
     net.add_node(src, label=src)
     net.add_node(tgt, label=tgt)
@@ -74,19 +108,3 @@ with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp_file:
 # Show data
 st.subheader("Underlying ETL Mapping Table")
 st.dataframe(df)
-
-# --- Instructions for Running ---
-st.markdown("""
-### How to Run this App:
-1. Ensure Python 3 is installed.
-2. Install required libraries:
-```bash
-pip install streamlit pyvis pandas networkx
-```
-3. Save this script as `etl_dependency_graph_app.py`
-4. Launch the app:
-```bash
-streamlit run etl_dependency_graph_app.py
-```
-5. Use the left sidebar to select a job/table and explore dependencies.
-""")
