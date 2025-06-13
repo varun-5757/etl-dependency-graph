@@ -56,13 +56,20 @@ def get_subgraph(graph, start_node, direction="downstream"):
             to_visit.append(n)
     return sub_edges
 
-selected_edges = get_subgraph(g, selected_node, direction="downstream" if direction.startswith("Down") else "upstream")
+selected_raw_edges = get_subgraph(g, selected_node, direction="downstream" if direction.startswith("Down") else "upstream")
 
 # Derive the filtered nodes from selected edges
 filtered_nodes = set()
-for src, tgt in selected_edges:
+for src, tgt in selected_raw_edges:
     filtered_nodes.add(src)
     filtered_nodes.add(tgt)
+
+# Extract job info for selected edges
+selected_edges = [
+    (src, tgt, job)
+    for (src, tgt, job) in edges
+    if (src, tgt) in selected_raw_edges or (tgt, src) in selected_raw_edges
+]
 
 # Pyvis graph
 net = Network(height="600px", width="100%", directed=True, notebook=False)
