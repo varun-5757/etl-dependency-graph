@@ -114,9 +114,9 @@ for src, tgt, job in selected_edges:
     src, tgt, job = str(src).strip(), str(tgt).strip(), str(job).strip()
     if all([src, tgt, job]) and all(x.lower() != 'none' for x in [src, tgt, job]):
         if src not in net.node_ids:
-        net.add_node(src, label=src)
+            net.add_node(src, label=src)
         if tgt not in net.node_ids:
-        net.add_node(tgt, label=tgt)
+            net.add_node(tgt, label=tgt)
         net.add_edge(src, tgt, label=job, color="red")
 
 # Render HTML in Streamlit
