@@ -32,9 +32,10 @@ edges = [(row["source"], row["target"], row["job"]) for _, row in df.iterrows()]
 nodes = sorted(set(df["source"]).union(set(df["target"])))
 
 # Sidebar filters
-st.sidebar.header("Explore Dependencies")
-selected_node = st.sidebar.selectbox("Select a table/job/report:", nodes)
-direction = st.sidebar.radio("Dependency Direction", ["Downstream (Impact)", "Upstream (Lineage)"])
+with st.sidebar:
+    st.header("Explore Dependencies")
+    selected_node = st.selectbox("Select a table/job/report:", nodes)
+    direction = st.radio("Dependency Direction", ["Downstream (Impact)", "Upstream (Lineage)"])
 
 # Build graph
 g = nx.DiGraph()
@@ -99,9 +100,10 @@ net.set_options(json.dumps(graph_options))
 
 # Add only relevant nodes and edges
 for src, tgt, job in selected_edges:
-    net.add_node(src, label=src)
-    net.add_node(tgt, label=tgt)
-    net.add_edge(src, tgt, label=job, color="red")
+    if src is not None and tgt is not None and job is not None:
+        net.add_node(src, label=str(src))
+        net.add_node(tgt, label=str(tgt))
+        net.add_edge(src, tgt, label=str(job), color="red")
 
 # Render HTML in Streamlit
 with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp_file:
