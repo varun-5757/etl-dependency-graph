@@ -28,21 +28,24 @@ data = [
 ]
 df = pd.DataFrame(data)
 
-# Clean any None values just in case
+# Clean any None or empty string values just in case
 df = df.dropna(subset=["source", "target", "job"])
+df = df[(df['source'] != '') & (df['target'] != '') & (df['job'] != '')]
 
-edges = [(row["source"], row["target"], row["job"]) for _, row in df.iterrows()]
+edges = [(row["source"], row["target"], row["job"]) for _, row in df.iterrows() if row["source"] and row["target"] and row["job"]]
 nodes = sorted(set(df["source"]).union(set(df["target"])))
 
-# Sidebar filters (fixed None-label issue by not using 'with st.sidebar')
+# Sidebar filters
+valid_nodes = [n for n in nodes if n and isinstance(n, str)]
 st.sidebar.header("Explore Dependencies")
-selected_node = st.sidebar.selectbox("Select a table/job/report:", [n for n in nodes if n])
-direction = st.sidebar.radio("Dependency Direction", ["Downstream (Impact)", "Upstream (Lineage)"])
+selected_node = st.sidebar.selectbox("Select a table/job/report:", valid_nodes, key="node_select")
+direction = st.sidebar.radio("Dependency Direction", ["Downstream (Impact)", "Upstream (Lineage)"], key="direction_radio")
 
 # Build graph
 g = nx.DiGraph()
 for src, tgt, job in edges:
-    g.add_edge(src, tgt, label=job)
+    if src and tgt and job:
+        g.add_edge(src, tgt, label=job)
 
 def get_subgraph(graph, start_node, direction="downstream"):
     visited = set()
@@ -64,8 +67,9 @@ selected_raw_edges = get_subgraph(g, selected_node, direction="downstream" if di
 # Derive the filtered nodes from selected edges
 filtered_nodes = set()
 for src, tgt in selected_raw_edges:
-    filtered_nodes.add(src)
-    filtered_nodes.add(tgt)
+    if src and tgt:
+        filtered_nodes.add(src)
+        filtered_nodes.add(tgt)
 
 # Extract job info for selected edges
 selected_edges = [
@@ -102,10 +106,10 @@ net.set_options(json.dumps(graph_options))
 
 # Add only relevant nodes and edges
 for src, tgt, job in selected_edges:
-    if all([src, tgt, job]):
-        net.add_node(src, label=str(src))
-        net.add_node(tgt, label=str(tgt))
-        net.add_edge(src, tgt, label=str(job), color="red")
+    if all([src, tgt, job]) and all(isinstance(x, str) and x.strip() for x in [src, tgt, job]):
+        net.add_node(src, label=src)
+        net.add_node(tgt, label=tgt)
+        net.add_edge(src, tgt, label=job, color="red")
 
 # Render HTML in Streamlit
 with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp_file:
