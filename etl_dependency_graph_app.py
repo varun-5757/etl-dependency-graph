@@ -30,13 +30,13 @@ df = pd.DataFrame(data)
 
 # Clean any None or empty string values just in case
 df = df.dropna(subset=["source", "target", "job"])
-df = df[(df['source'] != '') & (df['target'] != '') & (df['job'] != '')]
+df = df[(df['source'].astype(str).str.strip() != '') & (df['target'].astype(str).str.strip() != '') & (df['job'].astype(str).str.strip() != '')]
 
-edges = [(row["source"], row["target"], row["job"]) for _, row in df.iterrows() if row["source"] and row["target"] and row["job"]]
-nodes = sorted(set(df["source"]).union(set(df["target"])))
+edges = [(row["source"], row["target"], row["job"]) for _, row in df.iterrows()]
+nodes = sorted(set(df["source"]).union(set(df["target"])) )
 
 # Sidebar filters
-valid_nodes = [n for n in nodes if n and isinstance(n, str)]
+valid_nodes = [n for n in nodes if isinstance(n, str) and n.strip() != '']
 st.sidebar.header("Explore Dependencies")
 selected_node = st.sidebar.selectbox("Select a table/job/report:", valid_nodes, key="node_select")
 direction = st.sidebar.radio("Dependency Direction", ["Downstream (Impact)", "Upstream (Lineage)"], key="direction_radio")
@@ -44,8 +44,7 @@ direction = st.sidebar.radio("Dependency Direction", ["Downstream (Impact)", "Up
 # Build graph
 g = nx.DiGraph()
 for src, tgt, job in edges:
-    if src and tgt and job:
-        g.add_edge(src, tgt, label=job)
+    g.add_edge(str(src).strip(), str(tgt).strip(), label=str(job).strip())
 
 def get_subgraph(graph, start_node, direction="downstream"):
     visited = set()
@@ -67,9 +66,8 @@ selected_raw_edges = get_subgraph(g, selected_node, direction="downstream" if di
 # Derive the filtered nodes from selected edges
 filtered_nodes = set()
 for src, tgt in selected_raw_edges:
-    if src and tgt:
-        filtered_nodes.add(src)
-        filtered_nodes.add(tgt)
+    filtered_nodes.add(src)
+    filtered_nodes.add(tgt)
 
 # Extract job info for selected edges
 selected_edges = [
@@ -106,7 +104,8 @@ net.set_options(json.dumps(graph_options))
 
 # Add only relevant nodes and edges
 for src, tgt, job in selected_edges:
-    if all([src, tgt, job]) and all(isinstance(x, str) and x.strip() for x in [src, tgt, job]):
+    src, tgt, job = str(src).strip(), str(tgt).strip(), str(job).strip()
+    if all([src, tgt, job]) and all(x.lower() != 'none' for x in [src, tgt, job]):
         net.add_node(src, label=src)
         net.add_node(tgt, label=tgt)
         net.add_edge(src, tgt, label=job, color="red")
@@ -116,7 +115,7 @@ with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp_file:
     net.save_graph(tmp_file.name)
     with open(tmp_file.name, 'r', encoding='utf-8') as f:
         html = f.read()
-    os.unlink(tmp_file.name)  # Clean up temp file
+    os.unlink(tmp_file.name)
     components.html(html, height=650, scrolling=True)
 
 # Show filtered data
