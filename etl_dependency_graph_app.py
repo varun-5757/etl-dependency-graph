@@ -88,7 +88,7 @@ def main():
             "smooth": False
         },
         "physics": {
-            "enabled": True,
+            "enabled": true,
             "solver": "hierarchicalRepulsion",
             "hierarchicalRepulsion": {
                 "centralGravity": 0.0,
@@ -97,6 +97,13 @@ def main():
                 "nodeDistance": 150,
                 "damping": 0.09
             },
+            "stabilization": {"iterations": 150},
+            "hierarchical": {
+                "enabled": true,
+                "direction": "LR",
+                "sortMethod": "directed"
+            }
+        },
             "stabilization": {"iterations": 150}
         }
     }
