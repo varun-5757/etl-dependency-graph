@@ -81,12 +81,20 @@ def main():
 
     net = Network(height="600px", width="100%", directed=True, notebook=False)
     graph_options = {
-        "nodes": {"size": 12, "font": {"size": 7}},
-        "edges": {"arrows": {"to": {"enabled": True}}, "font": {"size": 7, "align": "middle"}},
+        "nodes": {"size": 15, "font": {"size": 7}},
+        "edges": {"arrows": {"to": {"enabled": true}}, "font": {"size": 7, "align": "middle"}, "smooth": false}}, "font": {"size": 7, "align": "middle"}, "smooth": false}}, "font": {"size": 7, "align": "middle"}},
         "physics": {
-            "enabled": True,
-            "solver": "forceAtlas2Based",
-            "forceAtlas2Based": {"gravitationalConstant": -50, "springLength": 350, "springConstant": 0.05},
+            "enabled": true,
+            "solver": "hierarchicalRepulsion",
+            "hierarchicalRepulsion": {
+                "centralGravity": 0.0,
+                "springLength": 350,
+                "springConstant": 0.01,
+                "nodeDistance": 150,
+                "damping": 0.09
+            },
+            "stabilization": {"iterations": 150}
+        },
             "stabilization": {"iterations": 100}
         }
     }
