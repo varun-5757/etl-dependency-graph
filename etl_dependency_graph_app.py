@@ -83,32 +83,30 @@ def main():
     graph_options = {
         "nodes": {"size": 15, "font": {"size": 10, "multi": "html"}},
         "edges": {
-            "arrows": {"to": {"enabled": True}},
+            "arrows": {"to": {"enabled": true}},
             "font": {"size": 10, "align": "middle", "multi": "html"},
-            "smooth": False
+            "smooth": false
         },
         "layout": {
-            "improvedLayout": True,
             "hierarchical": {
-                "enabled": True,
+                "enabled": true,
                 "direction": "LR",
                 "sortMethod": "directed",
-                "nodeSpacing": 300,
+                "nodeSpacing": 250,
                 "treeSpacing": 400,
                 "levelSeparation": 200
             }
         },
         "physics": {
-            "enabled": True,
-            "solver": "hierarchicalRepulsion",
+            "enabled": true,
             "hierarchicalRepulsion": {
                 "centralGravity": 0.0,
-                "springLength": 350,
+                "springLength": 500,
                 "springConstant": 0.01,
-                "nodeDistance": 150,
+                "nodeDistance": 250,
                 "damping": 0.09
             },
-            "stabilization": {"iterations": 150}
+            "stabilization": {"iterations": 300}
         }
     }
     net.set_options(json.dumps(graph_options))
