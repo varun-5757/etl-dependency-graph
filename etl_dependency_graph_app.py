@@ -81,7 +81,7 @@ def main():
     ]
 
     net = Network(height="600px", width="100%", directed=True, notebook=False)
-    graph_options = {
+    net.set_options(json.dumps({
         "nodes": {"size": 15, "font": {"size": 10, "multi": "html"}},
         "edges": {
             "arrows": {"to": {"enabled": True}},
@@ -93,24 +93,27 @@ def main():
                 "enabled": True,
                 "direction": "LR",
                 "sortMethod": "directed",
-                "nodeSpacing": 390,  # Increased by 30%
-                "treeSpacing": 650,  # Increased by 30%
-                "levelSeparation": 390  # Increased by 30%
+                "nodeSpacing": 507,
+                "treeSpacing": 845,
+                "levelSeparation": 507
             }
         },
         "physics": {
             "enabled": True,
             "hierarchicalRepulsion": {
                 "centralGravity": 0.0,
-                "springLength": 780,  # Increased by 30%
+                "springLength": 1014,
                 "springConstant": 0.01,
-                "nodeDistance": 390,  # Increased by 30%
+                "nodeDistance": 507,
                 "damping": 0.09
             },
             "stabilization": {"iterations": 300}
+        },
+        "interaction": {
+            "navigationButtons": True,
+            "keyboard": True
         }
-    }
-    net.set_options(json.dumps(graph_options))
+    }))
 
     for node in filtered_nodes:
         node = str(node).strip()
