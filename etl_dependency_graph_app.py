@@ -87,8 +87,15 @@ def main():
             "font": {"size": 7, "align": "middle"},
             "smooth": False
         },
+        "layout": {
+            "hierarchical": {
+                "enabled": True,
+                "direction": "LR",
+                "sortMethod": "directed"
+            }
+        },
         "physics": {
-            "enabled": true,
+            "enabled": True,
             "solver": "hierarchicalRepulsion",
             "hierarchicalRepulsion": {
                 "centralGravity": 0.0,
@@ -97,13 +104,6 @@ def main():
                 "nodeDistance": 150,
                 "damping": 0.09
             },
-            "stabilization": {"iterations": 150},
-            "hierarchical": {
-                "enabled": true,
-                "direction": "LR",
-                "sortMethod": "directed"
-            }
-        },
             "stabilization": {"iterations": 150}
         }
     }
