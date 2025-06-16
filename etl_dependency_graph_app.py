@@ -8,6 +8,7 @@ import tempfile
 import json
 import os
 
+
 def main():
     st.set_page_config(layout="wide")
     st.title("ETL Dependency Graph Viewer")
@@ -33,7 +34,7 @@ def main():
     df = df.dropna(subset=["source", "target", "job"])
     df = df[(df['source'].astype(str).str.strip() != '') & (df['target'].astype(str).str.strip() != '') & (df['job'].astype(str).str.strip() != '')]
     edges = [(row["source"], row["target"], row["job"]) for _, row in df.iterrows()]
-    nodes = sorted(set(df["source"]).union(set(df["target"])) )
+    nodes = sorted(set(df["source"]).union(set(df["target"])))
 
     @st.cache_data(show_spinner=False)
     def get_valid_nodes():
@@ -83,27 +84,27 @@ def main():
     graph_options = {
         "nodes": {"size": 15, "font": {"size": 10, "multi": "html"}},
         "edges": {
-            "arrows": {"to": {"enabled": true}},
+            "arrows": {"to": {"enabled": True}},
             "font": {"size": 10, "align": "middle", "multi": "html"},
-            "smooth": false
+            "smooth": False
         },
         "layout": {
             "hierarchical": {
-                "enabled": true,
+                "enabled": True,
                 "direction": "LR",
                 "sortMethod": "directed",
-                "nodeSpacing": 250,
-                "treeSpacing": 400,
-                "levelSeparation": 200
+                "nodeSpacing": 300,
+                "treeSpacing": 500,
+                "levelSeparation": 300
             }
         },
         "physics": {
-            "enabled": true,
+            "enabled": True,
             "hierarchicalRepulsion": {
                 "centralGravity": 0.0,
-                "springLength": 500,
+                "springLength": 600,
                 "springConstant": 0.01,
-                "nodeDistance": 250,
+                "nodeDistance": 300,
                 "damping": 0.09
             },
             "stabilization": {"iterations": 300}
@@ -111,13 +112,11 @@ def main():
     }
     net.set_options(json.dumps(graph_options))
 
-    # Step 1: Pre-add all filtered nodes with labels before adding any edges
     for node in filtered_nodes:
         node = str(node).strip()
         if node and node.lower() != 'none':
             net.add_node(node, label=node)
 
-    # Step 2: Add edges only
     for src, tgt, job in selected_edges:
         src, tgt, job = str(src).strip(), str(tgt).strip(), str(job).strip()
         if all([src, tgt, job]) and all(x.lower() != 'none' for x in [src, tgt, job]):
@@ -141,6 +140,7 @@ def main():
         st.dataframe(filtered_df)
 
     st.write("✅ App finished rendering.")
+
 
 if __name__ == "__main__":
     main()
