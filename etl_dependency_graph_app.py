@@ -81,18 +81,23 @@ def main():
 
     net = Network(height="600px", width="100%", directed=True, notebook=False)
     graph_options = {
-        "nodes": {"size": 15, "font": {"size": 7}},
+        "nodes": {"size": 15, "font": {"size": 10, "multi": "html"}},
         "edges": {
             "arrows": {"to": {"enabled": True}},
-            "font": {"size": 7, "align": "middle"},
+            "font": {"size": 10, "align": "middle", "multi": "html"},
             "smooth": False
         },
         "layout": {
+            "improvedLayout": true,
             "hierarchical": {
-                "enabled": True,
+                "enabled": true,
                 "direction": "LR",
-                "sortMethod": "directed"
+                "sortMethod": "directed",
+                "nodeSpacing": 300,
+                "treeSpacing": 400,
+                "levelSeparation": 200
             }
+        }
         },
         "physics": {
             "enabled": True,
