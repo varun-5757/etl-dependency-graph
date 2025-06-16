@@ -93,18 +93,18 @@ def main():
                 "enabled": True,
                 "direction": "LR",
                 "sortMethod": "directed",
-                "nodeSpacing": 300,
-                "treeSpacing": 500,
-                "levelSeparation": 300
+                "nodeSpacing": 390,  # Increased by 30%
+                "treeSpacing": 650,  # Increased by 30%
+                "levelSeparation": 390  # Increased by 30%
             }
         },
         "physics": {
             "enabled": True,
             "hierarchicalRepulsion": {
                 "centralGravity": 0.0,
-                "springLength": 600,
+                "springLength": 780,  # Increased by 30%
                 "springConstant": 0.01,
-                "nodeDistance": 300,
+                "nodeDistance": 390,  # Increased by 30%
                 "damping": 0.09
             },
             "stabilization": {"iterations": 300}
