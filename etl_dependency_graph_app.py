@@ -88,16 +88,15 @@ def main():
             "smooth": False
         },
         "layout": {
-            "improvedLayout": true,
+            "improvedLayout": True,
             "hierarchical": {
-                "enabled": true,
+                "enabled": True,
                 "direction": "LR",
                 "sortMethod": "directed",
                 "nodeSpacing": 300,
                 "treeSpacing": 400,
                 "levelSeparation": 200
             }
-        }
         },
         "physics": {
             "enabled": True,
