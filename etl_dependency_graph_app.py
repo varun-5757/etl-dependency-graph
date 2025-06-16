@@ -16,17 +16,16 @@ def main():
     # Mocked Up Dataset
     # ------------------------
     data = [
-        {"job": "ODS_EDW.FIN_PSFT.12.Load_FACT_Ledger", "source": "ODS_P.DSSTG.STG_FACT_LEDGER_SOURCE_INFO", "target": "EDW_P.FIN.FACT_LEDGER"},
-        {"job": "ODS_EDW.FIN_PSFT.12.Load_FACT_Ledger", "source": "ODS_P.FIN_PSFT.PS_LEDGER", "target": "ODS_P.DSSTG.STG_FACT_LEDGER_SOURCE_INFO"},
-        {"job": "ODS_EDW.FIN_PSFT.12.Load_FACT_Ledger", "source": "EDW_P.FIN.FACT_LEDGER", "target": "ODS_P.DSSTG.STG_FACT_LEDGER_TARGET_INFO"},
-        {"job": "ODS_EDW.FIN_PSFT.12.Load_FACT_Ledger", "source": "ODS_P.DSSTG.STG_FACT_LEDGER_SOURCE_INFO", "target": "ODS_P.DSSTG.STG_FACT_LEDGER_TARGET_INFO"},
-        {"job": "ODS_EDW.FIN_PSFT.13.Load_FACT_Ledger_Budget", "source": "ODS_P.FIN_PSFT.PS_LEDGER_BUDG", "target": "EDW_P.FIN.FACT_LEDGER_BUDGET"},
-        {"job": "ODS_EDW.FIN_PSFT.14.Load_FACT_Journal_Pending", "source": "ODS_P.DSSTG.STG_PS_JOURNAL_FACT_SOURCE_INFO", "target": "EDW_P.FIN.FACT_JOURNAL"},
-        {"job": "ODS_EDW.FIN_PSFT.14.Load_FACT_Journal_Pending", "source": "EDW_P.FIN.FACT_JOURNAL", "target": "ODS_P.DSSTG.STG_PS_JOURNAL_FACT_TARGET_INFO"},
-        {"job": "ODS_EDW.FIN_PSFT.14.Load_FACT_Journal_Pending", "source": "ODS_P.DSSTG.STG_PS_JOURNAL_FACT_SOURCE_INFO", "target": "ODS_P.DSSTG.STG_PS_JOURNAL_FACT_TARGET_INFO"},
-        {"job": "ODS_EDW.FIN_PSFT.14.Load_FACT_Journal_Pending", "source": "ODS_P.DSSTG.STG_PS_JOURNAL_FACT_SOURCE_FAIL_INFO", "target": "ODS_P.DSSTG.STG_PS_JOURNAL_FACT_SOURCE_INFO"},
-        {"job": "ODS_EDW.FIN_PSFT.14.Load_FACT_Journal_Pending", "source": "ODS_P.FIN_PSFT.PS_JRNL_HEADER", "target": "ODS_P.DSSTG.STG_PS_JOURNAL_FACT_SOURCE_INFO"},
-        {"job": "ODS_EDW.FIN_PSFT.14.Load_FACT_Journal_Pending", "source": "ODS_P.FIN_PSFT.PS_JRNL_LN", "target": "ODS_P.DSSTG.STG_PS_JOURNAL_FACT_SOURCE_INFO"}
+        {"job": "Job_A", "source": "Raw_Sales", "target": "Stg_Sales"},
+        {"job": "Job_B", "source": "Stg_Sales", "target": "Dim_Customer"},
+        {"job": "Job_C", "source": "Dim_Customer", "target": "Fact_Sales"},
+        {"job": "Job_D", "source": "Fact_Sales", "target": "Sales_Report"},
+        {"job": "Job_E", "source": "Raw_Inventory", "target": "Stg_Inventory"},
+        {"job": "Job_F", "source": "Stg_Inventory", "target": "Dim_Product"},
+        {"job": "Job_G", "source": "Dim_Product", "target": "Fact_Inventory"},
+        {"job": "Job_H", "source": "Fact_Inventory", "target": "Inventory_Report"},
+        {"job": "Job_I", "source": "Fact_Sales", "target": "Combined_Report"},
+        {"job": "Job_J", "source": "Fact_Inventory", "target": "Combined_Report"}
     ]
     df = pd.DataFrame(data)
 
@@ -82,9 +81,13 @@ def main():
     net = Network(height="600px", width="100%", directed=True, notebook=False)
     graph_options = {
         "nodes": {"size": 15, "font": {"size": 7}},
-        "edges": {"arrows": {"to": {"enabled": true}}, "font": {"size": 7, "align": "middle"}, "smooth": false}}, "font": {"size": 7, "align": "middle"}, "smooth": false}}, "font": {"size": 7, "align": "middle"}},
+        "edges": {
+            "arrows": {"to": {"enabled": True}},
+            "font": {"size": 7, "align": "middle"},
+            "smooth": False
+        },
         "physics": {
-            "enabled": true,
+            "enabled": True,
             "solver": "hierarchicalRepulsion",
             "hierarchicalRepulsion": {
                 "centralGravity": 0.0,
@@ -94,8 +97,6 @@ def main():
                 "damping": 0.09
             },
             "stabilization": {"iterations": 150}
-        },
-            "stabilization": {"iterations": 100}
         }
     }
     net.set_options(json.dumps(graph_options))
