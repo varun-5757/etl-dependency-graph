@@ -1,118 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>ETL Tree Graph</title>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <meta charset="utf-8" />
+  <title>ETL D3 Tree</title>
   <style>
     body {
       font-family: sans-serif;
+      background-color: #0e1117;
+      color: #fff;
       margin: 0;
-    }
-    svg {
-      width: 100vw;
-      height: 100vh;
+      padding: 0;
     }
     .link {
       fill: none;
-      stroke: #ccc;
+      stroke: #999;
+      stroke-opacity: 0.6;
       stroke-width: 1.5px;
     }
     .node circle {
       fill: steelblue;
-      r: 5;
+      stroke: white;
+      stroke-width: 1.5px;
     }
     .node text {
       font: 12px sans-serif;
-      fill: #333;
+      fill: white;
     }
     .tooltip {
       position: absolute;
-      background-color: white;
-      border: 1px solid #ccc;
-      padding: 4px 8px;
-      font-size: 12px;
+      text-align: center;
+      width: auto;
+      padding: 6px;
+      font: 12px sans-serif;
+      background: lightsteelblue;
+      border: 0px;
+      border-radius: 8px;
       pointer-events: none;
     }
   </style>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
-<svg></svg>
-<div class="tooltip" style="display:none"></div>
-<script>
-  // Load and process the data
-  fetch("etl_graph_data.json")
-    .then(response => response.json())
-    .then(data => {
-      // Convert flat edge list to hierarchical tree
-      const nodes = {};
-      const root = { name: "ROOT", children: [] };
+  <h2 style="padding:10px">ETL Tree Viewer (D3.js)</h2>
+  <svg width="1600" height="900"></svg>
+  <script>
+    fetch("etl_graph_data.json")
+      .then(response => response.json())
+      .then(data => drawTree(data))
+      .catch(error => console.error("Failed to load data:", error));
 
-      function findOrCreate(name) {
-        if (!nodes[name]) nodes[name] = { name, children: [] };
-        return nodes[name];
+    function drawTree(data) {
+      const links = data.map(d => ({ source: d.source, target: d.target, job: d.job }));
+      const nodesSet = new Set(links.flatMap(l => [l.source, l.target]));
+      const nodes = Array.from(nodesSet).map(id => ({ id }));
+
+      const svg = d3.select("svg"),
+            width = +svg.attr("width"),
+            height = +svg.attr("height");
+
+      const simulation = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.id).distance(200))
+        .force("charge", d3.forceManyBody().strength(-800))
+        .force("center", d3.forceCenter(width / 2, height / 2));
+
+      const link = svg.append("g")
+        .attr("stroke", "#999")
+        .attr("stroke-opacity", 0.6)
+        .selectAll("line")
+        .data(links)
+        .join("line")
+        .attr("stroke-width", 2);
+
+      const tooltip = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+
+      const node = svg.append("g")
+        .attr("stroke", "#fff")
+        .attr("stroke-width", 1.5)
+        .selectAll("circle")
+        .data(nodes)
+        .join("circle")
+        .attr("r", 10)
+        .attr("fill", "steelblue")
+        .call(drag(simulation));
+
+      node.append("title")
+        .text(d => d.id);
+
+      const label = svg.append("g")
+        .selectAll("text")
+        .data(nodes)
+        .join("text")
+        .text(d => d.id)
+        .attr("font-size", 10)
+        .attr("fill", "white");
+
+      link.on("mouseover", (event, d) => {
+        tooltip.transition().duration(200).style("opacity", .9);
+        tooltip.html(d.job)
+          .style("left", (event.pageX + 10) + "px")
+          .style("top", (event.pageY - 28) + "px");
+      })
+      .on("mouseout", () => {
+        tooltip.transition().duration(500).style("opacity", 0);
+      });
+
+      simulation.on("tick", () => {
+        link
+          .attr("x1", d => d.source.x)
+          .attr("y1", d => d.source.y)
+          .attr("x2", d => d.target.x)
+          .attr("y2", d => d.target.y);
+
+        node
+          .attr("cx", d => d.x)
+          .attr("cy", d => d.y);
+
+        label
+          .attr("x", d => d.x + 12)
+          .attr("y", d => d.y + 4);
+      });
+
+      function drag(simulation) {
+        function dragstarted(event) {
+          if (!event.active) simulation.alphaTarget(0.3).restart();
+          event.subject.fx = event.subject.x;
+          event.subject.fy = event.subject.y;
+        }
+
+        function dragged(event) {
+          event.subject.fx = event.x;
+          event.subject.fy = event.y;
+        }
+
+        function dragended(event) {
+          if (!event.active) simulation.alphaTarget(0);
+          event.subject.fx = null;
+          event.subject.fy = null;
+        }
+
+        return d3.drag()
+          .on("start", dragstarted)
+          .on("drag", dragged)
+          .on("end", dragended);
       }
-
-      // Build tree
-      data.forEach(({ source, target, job }) => {
-        const src = findOrCreate(source.trim());
-        const tgt = findOrCreate(target.trim());
-        src.children.push({ ...tgt, job });
-      });
-
-      Object.values(nodes).forEach(node => {
-        if (!Object.values(nodes).some(n => n.children.includes(node))) {
-          root.children.push(node);
-        }
-      });
-
-      // Create D3 tree
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-
-      const treeLayout = d3.tree().size([height, width - 200]);
-
-      const rootHierarchy = d3.hierarchy(root);
-      treeLayout(rootHierarchy);
-
-      const svg = d3.select("svg");
-      const g = svg.append("g").attr("transform", "translate(80,0)");
-
-      const link = g.selectAll(".link")
-        .data(rootHierarchy.links())
-        .join("path")
-        .attr("class", "link")
-        .attr("d", d3.linkHorizontal()
-          .x(d => d.y)
-          .y(d => d.x));
-
-      const node = g.selectAll(".node")
-        .data(rootHierarchy.descendants())
-        .join("g")
-        .attr("class", "node")
-        .attr("transform", d => `translate(${d.y},${d.x})`);
-
-      node.append("circle")
-        .attr("r", 4.5);
-
-      node.append("text")
-        .attr("dy", 3)
-        .attr("x", d => d.children ? -8 : 8)
-        .style("text-anchor", d => d.children ? "end" : "start")
-        .text(d => d.data.name);
-
-      // Tooltip on link hover
-      const tooltip = d3.select(".tooltip");
-      link.on("mouseover", function (event, d) {
-        const job = d.target.data.job;
-        if (job) {
-          tooltip.style("display", "block")
-            .style("left", (event.pageX + 5) + "px")
-            .style("top", (event.pageY + 5) + "px")
-            .html("<strong>Job:</strong> " + job);
-        }
-      }).on("mouseout", () => tooltip.style("display", "none"));
-    });
-</script>
+    }
+  </script>
 </body>
 </html>
