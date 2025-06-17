@@ -14,7 +14,7 @@ def main():
     st.title("ETL Dependency Graph Viewer")
 
     # ------------------------
-    # Mocked Up Dataset
+    # Real Dataset
     # ------------------------
     data = [
     {"job": "12.Load_FACT_Ledger", "source": "ODS_P.DSSTG.STG_FACT_LEDGER_SOURCE_INFO", "target": "EDW_P.FIN.FACT_LEDGER"},
@@ -166,8 +166,6 @@ def main():
 ]
 
     df = pd.DataFrame(data)
-
-    # Strip whitespace from all string columns
     df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
 
     df = df.dropna(subset=["source", "target", "job"])
@@ -222,37 +220,40 @@ def main():
         if (src.strip(), tgt.strip()) in selected_raw_edges or (tgt.strip(), src.strip()) in selected_raw_edges
     ]
 
-    net = Network(height="600px", width="100%", directed=True, notebook=False)
-    graph_options = {
-        "nodes": {"size": 15, "font": {"size": 10, "multi": "html"}},
+    net = Network(height="700px", width="100%", directed=True, notebook=False)
+    net.set_options(json.dumps({
+        "nodes": {"size": 18, "font": {"size": 14, "multi": "html"}},
         "edges": {
             "arrows": {"to": {"enabled": True}},
-            "font": {"size": 10, "align": "middle", "multi": "html"},
-            "smooth": False
+            "font": {"size": 12, "align": "middle", "multi": "html"},
+            "smooth": {
+                "type": "cubicBezier",
+                "forceDirection": "horizontal",
+                "roundness": 0.5
+            }
         },
         "layout": {
-            "hierarchical": {
-                "enabled": True,
-                "direction": "LR",
-                "sortMethod": "directed",
-                "nodeSpacing": 390,
-                "treeSpacing": 650,
-                "levelSeparation": 390
-            }
+            "improvedLayout": True
         },
         "physics": {
             "enabled": True,
-            "hierarchicalRepulsion": {
-                "centralGravity": 0.0,
-                "springLength": 780,
-                "springConstant": 0.01,
-                "nodeDistance": 390,
-                "damping": 0.09
+            "forceAtlas2Based": {
+                "gravitationalConstant": -200,
+                "springLength": 300,
+                "springConstant": 0.03,
+                "avoidOverlap": 1
             },
-            "stabilization": {"iterations": 300}
+            "minVelocity": 0.75,
+            "solver": "forceAtlas2Based",
+            "stabilization": {"iterations": 250}
+        },
+        "interaction": {
+            "navigationButtons": true,
+            "keyboard": true,
+            "dragNodes": true,
+            "zoomView": true
         }
-    }
-    net.set_options(json.dumps(graph_options))
+    }))
 
     for node in filtered_nodes:
         node = str(node).strip()
@@ -272,7 +273,7 @@ def main():
         os.unlink(tmp_file.name)
 
     if html_content:
-        components.html(html_content, height=650, scrolling=True)
+        components.html(html_content, height=750, scrolling=True)
 
     if not filtered_nodes:
         st.warning("No connected nodes found for the selected input.")
