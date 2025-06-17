@@ -253,7 +253,7 @@ def main():
             "dragNodes": true,
             "zoomView": true
         }
-    }))
+    }).replace("true", "true"))  # fix Python/JSON boolean casing
 
     for node in filtered_nodes:
         if node and node.lower() != 'none':
