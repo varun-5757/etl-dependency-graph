@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ETL Tree Graph</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+    }
+    svg {
+      width: 100vw;
+      height: 100vh;
+    }
+    .link {
+      fill: none;
+      stroke: #ccc;
+      stroke-width: 1.5px;
+    }
+    .node circle {
+      fill: steelblue;
+      r: 5;
+    }
+    .node text {
+      font: 12px sans-serif;
+      fill: #333;
+    }
+    .tooltip {
+      position: absolute;
+      background-color: white;
+      border: 1px solid #ccc;
+      padding: 4px 8px;
+      font-size: 12px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+<svg></svg>
+<div class="tooltip" style="display:none"></div>
+<script>
+  // Load and process the data
+  fetch("etl_graph_data.json")
+    .then(response => response.json())
+    .then(data => {
+      // Convert flat edge list to hierarchical tree
+      const nodes = {};
+      const root = { name: "ROOT", children: [] };
+
+      function findOrCreate(name) {
+        if (!nodes[name]) nodes[name] = { name, children: [] };
+        return nodes[name];
+      }
+
+      // Build tree
+      data.forEach(({ source, target, job }) => {
+        const src = findOrCreate(source.trim());
+        const tgt = findOrCreate(target.trim());
+        src.children.push({ ...tgt, job });
+      });
+
+      Object.values(nodes).forEach(node => {
+        if (!Object.values(nodes).some(n => n.children.includes(node))) {
+          root.children.push(node);
+        }
+      });
+
+      // Create D3 tree
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      const treeLayout = d3.tree().size([height, width - 200]);
+
+      const rootHierarchy = d3.hierarchy(root);
+      treeLayout(rootHierarchy);
+
+      const svg = d3.select("svg");
+      const g = svg.append("g").attr("transform", "translate(80,0)");
+
+      const link = g.selectAll(".link")
+        .data(rootHierarchy.links())
+        .join("path")
+        .attr("class", "link")
+        .attr("d", d3.linkHorizontal()
+          .x(d => d.y)
+          .y(d => d.x));
+
+      const node = g.selectAll(".node")
+        .data(rootHierarchy.descendants())
+        .join("g")
+        .attr("class", "node")
+        .attr("transform", d => `translate(${d.y},${d.x})`);
+
+      node.append("circle")
+        .attr("r", 4.5);
+
+      node.append("text")
+        .attr("dy", 3)
+        .attr("x", d => d.children ? -8 : 8)
+        .style("text-anchor", d => d.children ? "end" : "start")
+        .text(d => d.data.name);
+
+      // Tooltip on link hover
+      const tooltip = d3.select(".tooltip");
+      link.on("mouseover", function (event, d) {
+        const job = d.target.data.job;
+        if (job) {
+          tooltip.style("display", "block")
+            .style("left", (event.pageX + 5) + "px")
+            .style("top", (event.pageY + 5) + "px")
+            .html("<strong>Job:</strong> " + job);
+        }
+      }).on("mouseout", () => tooltip.style("display", "none"));
+    });
+</script>
+</body>
+</html>
