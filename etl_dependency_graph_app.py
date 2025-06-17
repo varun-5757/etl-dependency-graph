@@ -248,12 +248,12 @@ def main():
             "stabilization": {"iterations": 250}
         },
         "interaction": {
-            "navigationButtons": true,
-            "keyboard": true,
-            "dragNodes": true,
-            "zoomView": true
+            "navigationButtons": True,
+            "keyboard": True,
+            "dragNodes": True,
+            "zoomView": True
         }
-    }, indent=2).replace(': true', ': true').replace(': false', ': false')))
+    }, indent=2)))
 
     for node in filtered_nodes:
         if node and node.lower() != 'none':
