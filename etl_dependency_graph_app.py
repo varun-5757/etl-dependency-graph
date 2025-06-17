@@ -227,25 +227,14 @@ def main():
             "arrows": {"to": {"enabled": True}},
             "font": {"size": 12, "align": "middle", "multi": "html"},
             "smooth": {
-                "type": "cubicBezier",
-                "forceDirection": "horizontal",
-                "roundness": 0.5
+                "enabled": False
             }
         },
         "layout": {
             "improvedLayout": True
         },
         "physics": {
-            "enabled": True,
-            "forceAtlas2Based": {
-                "gravitationalConstant": -200,
-                "springLength": 300,
-                "springConstant": 0.03,
-                "avoidOverlap": 1
-            },
-            "minVelocity": 0.75,
-            "solver": "forceAtlas2Based",
-            "stabilization": {"iterations": 250}
+            "enabled": False
         },
         "interaction": {
             "navigationButtons": True,
