@@ -166,16 +166,16 @@ def main():
 ]
 
     df = pd.DataFrame(data)
-    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+    df = df.apply(lambda col: col.str.strip() if col.dtype == "object" else col)
 
     df = df.dropna(subset=["source", "target", "job"])
-    df = df[(df['source'].astype(str).str.strip() != '') & (df['target'].astype(str).str.strip() != '') & (df['job'].astype(str).str.strip() != '')]
+    df = df[(df['source'] != '') & (df['target'] != '') & (df['job'] != '')]
     edges = [(row["source"], row["target"], row["job"]) for _, row in df.iterrows()]
     nodes = sorted(set(df["source"]).union(set(df["target"])))
 
     @st.cache_data(show_spinner=False)
     def get_valid_nodes():
-        return [n.strip() for n in nodes if isinstance(n, str) and n.strip() != '']
+        return [n for n in nodes if isinstance(n, str) and n.strip() != '']
 
     def render_sidebar():
         st.sidebar.header("Explore Dependencies")
@@ -187,7 +187,7 @@ def main():
 
     g = nx.DiGraph()
     for src, tgt, job in edges:
-        g.add_edge(str(src).strip(), str(tgt).strip(), label=str(job).strip())
+        g.add_edge(src, tgt, label=job)
 
     def get_subgraph(graph, start_node, direction="downstream"):
         visited = set()
@@ -211,13 +211,13 @@ def main():
 
     filtered_nodes = set()
     for src, tgt in selected_raw_edges:
-        filtered_nodes.add(src.strip())
-        filtered_nodes.add(tgt.strip())
+        filtered_nodes.add(src)
+        filtered_nodes.add(tgt)
 
     selected_edges = [
-        (src.strip(), tgt.strip(), job.strip())
+        (src, tgt, job)
         for (src, tgt, job) in edges
-        if (src.strip(), tgt.strip()) in selected_raw_edges or (tgt.strip(), src.strip()) in selected_raw_edges
+        if (src, tgt) in selected_raw_edges or (tgt, src) in selected_raw_edges
     ]
 
     net = Network(height="700px", width="100%", directed=True, notebook=False)
@@ -256,12 +256,10 @@ def main():
     }))
 
     for node in filtered_nodes:
-        node = str(node).strip()
         if node and node.lower() != 'none':
             net.add_node(node, label=node)
 
     for src, tgt, job in selected_edges:
-        src, tgt, job = str(src).strip(), str(tgt).strip(), str(job).strip()
         if all([src, tgt, job]) and all(x.lower() != 'none' for x in [src, tgt, job]):
             net.add_edge(src, tgt, label=job, color="red")
 
@@ -278,7 +276,7 @@ def main():
     if not filtered_nodes:
         st.warning("No connected nodes found for the selected input.")
     else:
-        filtered_df = df[df.apply(lambda row: row['source'].strip() in filtered_nodes and row['target'].strip() in filtered_nodes, axis=1)]
+        filtered_df = df[df.apply(lambda row: row['source'] in filtered_nodes and row['target'] in filtered_nodes, axis=1)]
         st.subheader("Filtered ETL Mapping Table")
         st.dataframe(filtered_df)
 
