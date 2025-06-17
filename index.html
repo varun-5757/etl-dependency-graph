@@ -44,10 +44,15 @@
   <h2 style="padding:10px">ETL Tree Viewer (D3.js)</h2>
   <svg width="1600" height="900"></svg>
   <script>
-    fetch("etl_graph_data.json")
-      .then(response => response.json())
-      .then(data => drawTree(data))
-      .catch(error => console.error("Failed to load data:", error));
+    // Inline embedded data instead of fetch()
+    const data = [
+      {"job": "Job A", "source": "Table_1", "target": "Table_2"},
+      {"job": "Job B", "source": "Table_2", "target": "Table_3"},
+      {"job": "Job C", "source": "Table_1", "target": "Table_4"},
+      {"job": "Job D", "source": "Table_4", "target": "Table_5"}
+    ];
+
+    drawTree(data);
 
     function drawTree(data) {
       const links = data.map(d => ({ source: d.source, target: d.target, job: d.job }));
