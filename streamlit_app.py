@@ -49,7 +49,13 @@ def main():
 
     def render_sidebar():
         st.sidebar.header("Explore Dependencies")
-        selected_node = st.sidebar.selectbox("Select a table/job/report:", get_valid_nodes(), key="node_select")
+        selected_node = st.sidebar.selectbox(
+            "Select a table/job/report:",
+            options=get_valid_nodes(),
+            index=0,
+            key="node_select",
+            format_func=lambda x: x,
+        )
         direction = st.sidebar.radio("Dependency Direction", ["Downstream (Impact)", "Upstream (Lineage)"], key="direction_radio")
         return selected_node.strip(), direction
 
@@ -99,19 +105,13 @@ def main():
             }
         },
         "physics": {
-            "enabled": True,
-            "hierarchicalRepulsion": {
-                "centralGravity": 0.0,
-                "springLength": 200,
-                "springConstant": 0.01,
-                "nodeDistance": 200,
-                "damping": 0.1
-            }
+            "enabled": False
         },
         "interaction": {
             "navigationButtons": True,
             "keyboard": True,
             "dragNodes": True,
+            "dragView": True,
             "zoomView": True
         }
     }, indent=2))
