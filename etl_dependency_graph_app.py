@@ -31,12 +31,21 @@ def main():
 
     df = df.dropna(subset=["source", "target", "job"])
     df = df[(df['source'] != '') & (df['target'] != '') & (df['job'] != '')]
-    edges = [(row["source"], row["target"], row["job"]) for _, row in df.iterrows()]
-    nodes = sorted(set(df["source"]).union(set(df["target"])))
+
+    # Create 2 types of edges: source -> job and job -> target
+    edges = []
+    for _, row in df.iterrows():
+        edges.append((row["source"], row["job"]))
+        edges.append((row["job"], row["target"]))
+
+    all_nodes = set()
+    all_nodes.update(df["source"].tolist())
+    all_nodes.update(df["target"].tolist())
+    all_nodes.update(df["job"].tolist())
 
     @st.cache_data(show_spinner=False)
     def get_valid_nodes():
-        return [n for n in nodes if isinstance(n, str) and n.strip() != '']
+        return [n for n in all_nodes if isinstance(n, str) and n.strip() != '']
 
     def render_sidebar():
         st.sidebar.header("Explore Dependencies")
@@ -47,8 +56,8 @@ def main():
     selected_node, direction = render_sidebar()
 
     g = nx.DiGraph()
-    for src, tgt, job in edges:
-        g.add_edge(src, tgt, label=job)
+    for src, tgt in edges:
+        g.add_edge(src, tgt)
 
     def get_subgraph(graph, start_node, direction="downstream"):
         visited = set()
@@ -75,18 +84,11 @@ def main():
         filtered_nodes.add(src)
         filtered_nodes.add(tgt)
 
-    selected_edges = [
-        (src, tgt, job)
-        for (src, tgt, job) in edges
-        if (src, tgt) in selected_raw_edges or (tgt, src) in selected_raw_edges
-    ]
-
     net = Network(height="700px", width="100%", directed=True, notebook=False)
     net.set_options(json.dumps({
         "nodes": {"size": 18, "font": {"size": 14, "multi": "html"}},
         "edges": {
             "arrows": {"to": {"enabled": True}},
-            "font": {"size": 12, "align": "middle", "multi": "html"},
             "smooth": {"enabled": False}
         },
         "layout": {"improvedLayout": True},
@@ -101,11 +103,13 @@ def main():
 
     for node in filtered_nodes:
         if node and node.lower() != 'none':
-            net.add_node(node, label=node)
+            node_type = "job" if node in df["job"].values else "table"
+            color = "lightblue" if node_type == "job" else "lightgreen"
+            net.add_node(node, label=node, color=color)
 
-    for src, tgt, job in selected_edges:
-        if all([src, tgt, job]) and all(x.lower() != 'none' for x in [src, tgt, job]):
-            net.add_edge(src, tgt, label=job, color="red")
+    for src, tgt in selected_raw_edges:
+        if all([src, tgt]) and all(x.lower() != 'none' for x in [src, tgt]):
+            net.add_edge(src, tgt)
 
     html_content = ""
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp_file:
@@ -120,7 +124,9 @@ def main():
     if not filtered_nodes:
         st.warning("No connected nodes found for the selected input.")
     else:
-        filtered_df = df[df.apply(lambda row: row['source'] in filtered_nodes and row['target'] in filtered_nodes, axis=1)]
+        filtered_df = df[df.apply(
+            lambda row: row['source'] in filtered_nodes and row['target'] in filtered_nodes and row['job'] in filtered_nodes,
+            axis=1)]
         st.subheader("Filtered ETL Mapping Table")
         st.dataframe(filtered_df[["JOBID", "PROJECT_NAME", "job", "source", "target"]])
 
