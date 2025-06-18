@@ -45,7 +45,7 @@ def main():
 
     @st.cache_data(show_spinner=False)
     def get_valid_nodes():
-        return [n for n in all_nodes if isinstance(n, str) and n.strip() != '']
+        return sorted([n for n in all_nodes if isinstance(n, str) and n.strip() != ''])
 
     def render_sidebar():
         st.sidebar.header("Explore Dependencies")
@@ -98,7 +98,16 @@ def main():
                 "sortMethod": "directed"
             }
         },
-        "physics": {"enabled": False},
+        "physics": {
+            "enabled": True,
+            "hierarchicalRepulsion": {
+                "centralGravity": 0.0,
+                "springLength": 200,
+                "springConstant": 0.01,
+                "nodeDistance": 200,
+                "damping": 0.1
+            }
+        },
         "interaction": {
             "navigationButtons": True,
             "keyboard": True,
@@ -129,8 +138,8 @@ def main():
 
         with st.expander("Legend", expanded=True):
             st.markdown("""
-            - 🟦 **Light Blue** = Job Node  
-            - 🟩 **Light Green** = Table Node
+            - 🟦 Jobs  
+            - 🟩 Tables
             """)
 
     if not filtered_nodes:
@@ -139,7 +148,7 @@ def main():
         filtered_df = df[df.apply(
             lambda row: row['source'] in filtered_nodes and row['target'] in filtered_nodes and row['job'] in filtered_nodes,
             axis=1)]
-        st.subheader("Filtered ETL Mapping Table")
+        st.subheader("ETL Mapping Table")
         st.dataframe(filtered_df[["JOBID", "PROJECT_NAME", "job", "source", "target"]])
 
     st.write("✅ App finished rendering.")
