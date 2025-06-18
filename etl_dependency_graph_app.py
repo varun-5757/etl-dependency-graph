@@ -5,7 +5,6 @@ from pyvis.network import Network
 import streamlit as st
 import streamlit.components.v1 as components
 import tempfile
-import json
 import os
 
 
@@ -14,16 +13,19 @@ def main():
     st.title("ETL Dependency Graph Viewer")
 
     # ------------------------
-    # Load dataset from external JSON file
+    # Load dataset from uploaded CSV file
     # ------------------------
     try:
-        with open("etl_graph_data.json", "r") as f:
-            data = json.load(f)
+        df = pd.read_csv("New_Data_FMS.csv")
+        df = df.rename(columns={
+            "JOB_NAME": "job",
+            "SOURCE_OBJECT_NAME": "source",
+            "TARGET_OBJECT_NAME": "target"
+        })
     except Exception as e:
         st.error(f"Failed to load data: {e}")
         return
 
-    df = pd.DataFrame(data)
     df = df.apply(lambda col: col.str.strip() if col.dtype == "object" else col)
 
     df = df.dropna(subset=["source", "target", "job"])
@@ -119,7 +121,7 @@ def main():
     else:
         filtered_df = df[df.apply(lambda row: row['source'] in filtered_nodes and row['target'] in filtered_nodes, axis=1)]
         st.subheader("Filtered ETL Mapping Table")
-        st.dataframe(filtered_df)
+        st.dataframe(filtered_df[["JOBID", "PROJECT_NAME", "job", "source", "target"]])
 
     st.write("✅ App finished rendering.")
 
