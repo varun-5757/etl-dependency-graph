@@ -6,6 +6,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 import tempfile
 import os
+import json  # ✅ Added missing import
 
 
 def main():
