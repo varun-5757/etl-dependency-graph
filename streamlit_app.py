@@ -104,8 +104,12 @@ def main():
         font = {"size": 14, "bold": node in directly_connected or node == selected_node}
         net.add_node(node, label=node, color=color, font=font)
 
-    for src, tgt in selected_raw_edges:
-        style_kwargs = {"color": "#4B4B4B", "width": 3} if (src, tgt) in direct_edges else {}
+        for src, tgt in selected_raw_edges:
+        # base style for every edge
+        style_kwargs = {"color": "#A9A9A9", "width": 1}
+        # highlight only if directly connected to the currently‑selected node
+        if (src, tgt) in direct_edges:
+            style_kwargs.update({"color": "#4B4B4B", "width": 3})
         net.add_edge(src, tgt, **style_kwargs)
 
     # —— 7. Auto‑fit once HTML loads ——
