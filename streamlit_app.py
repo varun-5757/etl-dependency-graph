@@ -86,11 +86,13 @@ def main():
 
     filtered_nodes = set()
     directly_connected = set()
+    direct_edges = set()
     for src, tgt in selected_raw_edges:
         filtered_nodes.add(src)
         filtered_nodes.add(tgt)
-        if selected_node in (src, tgt):
+        if src == selected_node or tgt == selected_node:
             directly_connected.add(tgt if src == selected_node else src)
+            direct_edges.add((src, tgt))
 
     net = Network(height="750px", width="100%", directed=True, notebook=False)
     net.set_options(json.dumps({
@@ -126,13 +128,12 @@ def main():
         if node and node.lower() != 'none':
             node_type = "job" if node in df["job"].values else "table"
             color = "lightblue" if node_type == "job" else "lightgreen"
-            font = {"size": 14, "bold": "true"} if node in directly_connected or node == selected_node else {"size": 14}
+            font = {"size": 14, "bold": True} if node in directly_connected or node == selected_node else {"size": 14}
             net.add_node(node, label=node, color=color, font=font)
 
     for src, tgt in selected_raw_edges:
         if all([src, tgt]) and all(x.lower() != 'none' for x in [src, tgt]):
-            edge_id = (src, tgt)
-            if selected_node in edge_id:
+            if (src, tgt) in direct_edges:
                 net.add_edge(src, tgt, color="#4B4B4B", width=3)
             else:
                 net.add_edge(src, tgt)
