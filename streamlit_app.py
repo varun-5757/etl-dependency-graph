@@ -125,17 +125,20 @@ def main():
     for node in filtered_nodes:
         if node and node.lower() != 'none':
             node_type = "job" if node in df["job"].values else "table"
-            color = "lightblue" if node_type == "job" else "lightgreen"  # original soft colors
+            color = "lightblue" if node_type == "job" else "lightgreen"
             font = {"size": 14, "bold": True} if node in directly_connected or node == selected_node else {"size": 14}
             net.add_node(node, label=node, color=color, font=font)
 
     for src, tgt in selected_raw_edges:
         if all([src, tgt]) and all(x.lower() != 'none' for x in [src, tgt]):
-            edge_color = "#4B4B4B" if selected_node in (src, tgt) else "#A9A9A9"
-            edge_width = 3 if selected_node in (src, tgt) else 1
+            if selected_node in (src, tgt):
+                edge_color = "#4B4B4B"
+                edge_width = 3
+            else:
+                edge_color = "#A9A9A9"
+                edge_width = 1
             net.add_edge(src, tgt, color=edge_color, width=edge_width)
 
-    # Inject JavaScript to auto-adjust zoom if labels overlap
     zoom_script = """
     <script type="text/javascript">
     window.addEventListener('load', function() {
