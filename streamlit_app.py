@@ -89,16 +89,20 @@ def main():
     selected_raw_edges = get_subgraph(g, selected_node, direction="downstream" if direction.startswith("Down") else "upstream")
 
     filtered_nodes = set()
+    directly_connected = set()
     for src, tgt in selected_raw_edges:
         filtered_nodes.add(src)
         filtered_nodes.add(tgt)
+        if selected_node in (src, tgt):
+            directly_connected.add(tgt if src == selected_node else src)
 
     net = Network(height="750px", width="100%", directed=True, notebook=False)
     net.set_options(json.dumps({
         "nodes": {"size": 18, "font": {"size": 14, "multi": "html"}},
         "edges": {
             "arrows": {"to": {"enabled": True}},
-            "smooth": {"enabled": False}
+            "smooth": {"enabled": False},
+            "color": {"color": "#848484"}
         },
         "layout": {
             "hierarchical": {
@@ -127,12 +131,13 @@ def main():
     for node in filtered_nodes:
         if node and node.lower() != 'none':
             node_type = "job" if node in df["job"].values else "table"
-            color = "lightblue" if node_type == "job" else "lightgreen"
-            net.add_node(node, label=node, color=color)
+            color = "#1f77b4" if node_type == "job" else "#2ca02c"  # darker blue and green
+            font = {"size": 14, "bold": True} if node in directly_connected or node == selected_node else {"size": 14}
+            net.add_node(node, label=node, color=color, font=font)
 
     for src, tgt in selected_raw_edges:
         if all([src, tgt]) and all(x.lower() != 'none' for x in [src, tgt]):
-            edge_color = "#ff5733" if selected_node in (src, tgt) else "#848484"
+            edge_color = "#333333" if selected_node in (src, tgt) else "#848484"
             edge_width = 3 if selected_node in (src, tgt) else 1
             net.add_edge(src, tgt, color=edge_color, width=edge_width)
 
