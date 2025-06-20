@@ -34,9 +34,12 @@ def main():
 
     # Create 2 types of edges: source -> job and job -> target
     edges = []
+    edge_styles = {}  # for bolding selected node's edges
     for _, row in df.iterrows():
         edges.append((row["source"], row["job"]))
+        edge_styles[(row["source"], row["job"]))] = row["job"]
         edges.append((row["job"], row["target"]))
+        edge_styles[(row["job"], row["target"]))] = row["job"]
 
     all_nodes = set()
     all_nodes.update(df["source"].tolist())
@@ -101,7 +104,10 @@ def main():
             "hierarchical": {
                 "enabled": True,
                 "direction": "UD",
-                "sortMethod": "directed"
+                "sortMethod": "directed",
+                "nodeSpacing": 150,
+                "treeSpacing": 300,
+                "levelSeparation": 200
             }
         },
         "physics": {
@@ -112,7 +118,9 @@ def main():
             "keyboard": True,
             "dragNodes": True,
             "dragView": True,
-            "zoomView": True
+            "zoomView": True,
+            "tooltipDelay": 200,
+            "multiselect": True
         }
     }, indent=2))
 
@@ -124,7 +132,29 @@ def main():
 
     for src, tgt in selected_raw_edges:
         if all([src, tgt]) and all(x.lower() != 'none' for x in [src, tgt]):
-            net.add_edge(src, tgt)
+            edge_color = "#ff5733" if selected_node in (src, tgt) else "#848484"
+            edge_width = 3 if selected_node in (src, tgt) else 1
+            net.add_edge(src, tgt, color=edge_color, width=edge_width)
+
+    # Inject JavaScript to auto-adjust zoom if labels overlap
+    zoom_script = """
+    <script type="text/javascript">
+    window.addEventListener('load', function() {
+        let attempts = 0;
+        const interval = setInterval(function() {
+            let labels = document.querySelectorAll('div.vis-network canvas');
+            if (labels.length > 0 || attempts > 10) {
+                let container = document.querySelector('div.vis-network');
+                if (container && container.network && container.network.fit) {
+                    container.network.fit();
+                }
+                clearInterval(interval);
+            }
+            attempts++;
+        }, 1000);
+    });
+    </script>
+    """
 
     html_content = ""
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp_file:
@@ -134,7 +164,7 @@ def main():
         os.unlink(tmp_file.name)
 
     if html_content:
-        components.html(html_content, height=800, scrolling=True)
+        components.html(html_content + zoom_script, height=800, scrolling=True)
 
         with st.expander("Legend", expanded=True):
             st.markdown("""
