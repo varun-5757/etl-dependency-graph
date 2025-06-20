@@ -37,9 +37,9 @@ def main():
     edge_styles = {}  # for bolding selected node's edges
     for _, row in df.iterrows():
         edges.append((row["source"], row["job"]))
-        edge_styles[(row["source"], row["job"]))] = row["job"]
+        edge_styles[(row["source"], row["job"])] = row["job"]
         edges.append((row["job"], row["target"]))
-        edge_styles[(row["job"], row["target"]))] = row["job"]
+        edge_styles[(row["job"], row["target"])] = row["job"]
 
     all_nodes = set()
     all_nodes.update(df["source"].tolist())
