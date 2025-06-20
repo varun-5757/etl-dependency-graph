@@ -6,16 +6,13 @@ import streamlit as st
 import streamlit.components.v1 as components
 import tempfile
 import os
-import json  # ✅ Added missing import
+import json
 
 
 def main():
     st.set_page_config(layout="wide")
     st.title("ETL Dependency Graph Viewer")
 
-    # ------------------------
-    # Load dataset from uploaded CSV file
-    # ------------------------
     try:
         df = pd.read_csv("New_Data_FMS.csv")
         df = df.rename(columns={
@@ -28,21 +25,24 @@ def main():
         return
 
     df = df.apply(lambda col: col.str.strip() if col.dtype == "object" else col)
-
     df = df.dropna(subset=["source", "target", "job"])
     df = df[(df['source'] != '') & (df['target'] != '') & (df['job'] != '')]
 
-    # Create 2 types of edges: source -> job and job -> target
     edges = []
+    edge_map = {}
     for _, row in df.iterrows():
-        edges.append((row["source"], row["job"]))
-        edges.append((row["job"], row["target"]))
+        src_job = (row["source"], row["job"])
+        job_tgt = (row["job"], row["target"])
+        edges.append(src_job)
+        edges.append(job_tgt)
+        edge_map[src_job] = row["job"]
+        edge_map[job_tgt] = row["job"]
 
     all_nodes = set(df["source"]).union(set(df["target"])).union(set(df["job"]))
 
     @st.cache_data(show_spinner=False)
     def get_valid_nodes():
-        return sorted([n for n in all_nodes if isinstance(n, str) and n.strip() != ''])
+        return sorted([n.strip() for n in all_nodes if isinstance(n, str) and n.strip().lower() != 'none'])
 
     def render_sidebar():
         st.sidebar.header("Explore Dependencies")
@@ -74,7 +74,9 @@ def main():
             try:
                 neighbors = graph.successors(current) if direction == "downstream" else graph.predecessors(current)
                 for n in neighbors:
-                    sub_edges.append((current, n)) if direction == "downstream" else sub_edges.append((n, current))
+                    edge = (current, n) if direction == "downstream" else (n, current)
+                    if edge in edge_map:
+                        sub_edges.append(edge)
                     to_visit.append(n)
             except nx.NetworkXError:
                 continue
@@ -96,7 +98,7 @@ def main():
         "edges": {
             "arrows": {"to": {"enabled": True}},
             "smooth": {"enabled": False},
-            "color": {"color": "#A9A9A9"}  # default light gray for all edges
+            "color": {"color": "#A9A9A9"}
         },
         "layout": {
             "hierarchical": {
@@ -108,9 +110,7 @@ def main():
                 "levelSeparation": 200
             }
         },
-        "physics": {
-            "enabled": False
-        },
+        "physics": {"enabled": False},
         "interaction": {
             "navigationButtons": True,
             "keyboard": True,
@@ -126,21 +126,19 @@ def main():
         if node and node.lower() != 'none':
             node_type = "job" if node in df["job"].values else "table"
             color = "lightblue" if node_type == "job" else "lightgreen"
-            font = {"size": 14, "bold": True} if node in directly_connected or node == selected_node else {"size": 14}
+            font = {"size": 14, "bold": "true"} if node in directly_connected or node == selected_node else {"size": 14}
             net.add_node(node, label=node, color=color, font=font)
 
     for src, tgt in selected_raw_edges:
         if all([src, tgt]) and all(x.lower() != 'none' for x in [src, tgt]):
-            if selected_node in (src, tgt):
-                edge_color = "#4B4B4B"
-                edge_width = 3
+            edge_id = (src, tgt)
+            if selected_node in edge_id:
+                net.add_edge(src, tgt, color="#4B4B4B", width=3)
             else:
-                edge_color = "#A9A9A9"
-                edge_width = 1
-            net.add_edge(src, tgt, color=edge_color, width=edge_width)
+                net.add_edge(src, tgt)
 
     zoom_script = """
-    <script type="text/javascript">
+    <script type=\"text/javascript\">
     window.addEventListener('load', function() {
         let attempts = 0;
         const interval = setInterval(function() {
