@@ -55,12 +55,36 @@ def main():
     def get_valid_nodes():
         return sorted([n for n in all_nodes if isinstance(n, str) and n.strip().lower() != "none"])
 
-    # —— 4. Sidebar controls ——
+        # —— 4. Sidebar controls ——
     st.sidebar.header("Explore Dependencies")
+    # add blank placeholder to avoid initial bold highlights
+    valid = get_valid_nodes()
+    valid.insert(0, "")
     selected_node: str = st.sidebar.selectbox(
-        "Select a table/job/report:", options=get_valid_nodes(), index=0, key="node_select"
+        "Select a table/job/report:",
+        options=valid,
+        index=0,
+        key="node_select"
     ).strip()
     downstream = st.sidebar.radio(
+        "Dependency Direction",
+        ["Downstream (Impact)", "Upstream (Lineage)"],
+        key="direction_radio"
+    ).startswith("Down")
+    
+    # determine which edges to show/highlight
+    if selected_node == "":
+        # no selection: show full graph without highlights
+        selected_edges = edges.copy()
+        filtered_nodes = {n for edge in edges for n in edge}
+        direct_edges = set()
+        directly_connected_nodes = set()
+    else:
+        # user selected a node: show only its subgraph
+        selected_edges = get_subgraph(selected_node, downstream)
+        filtered_nodes = {s for s, _ in selected_edges}.union({t for _, t in selected_edges})
+        direct_edges = {(s, t) for s, t in selected_edges if s == selected_node or t == selected_node}
+        directly_connected_nodes = {t if s == selected_node else s for s, t in direct_edges}(
         "Dependency Direction", ["Downstream (Impact)", "Upstream (Lineage)"], key="direction_radio"
     ).startswith("Down")
 
