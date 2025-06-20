@@ -95,7 +95,8 @@ def main():
         "nodes": {"size": 18, "font": {"size": 14, "multi": "html"}},
         "edges": {
             "arrows": {"to": {"enabled": True}},
-            "smooth": {"enabled": False}
+            "smooth": {"enabled": False},
+            "color": {"color": "#A9A9A9"}
         },
         "layout": {
             "hierarchical": {
