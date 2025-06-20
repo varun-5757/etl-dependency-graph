@@ -27,81 +27,64 @@ def main():
         st.error(f"Failed to load data: {e}")
         return
 
-    # Strip whitespace and filter out empty or 'None' strings
+    # Strip whitespace and filter out empty or 'None' values
     df = df.apply(lambda col: col.str.strip() if col.dtype == "object" else col)
-    df = df.dropna(subset=["source", "target", "job"])
+    df = df.dropna(subset=["source", "target", "job"] )
     df = df[~df['source'].str.lower().eq('none')]
     df = df[~df['target'].str.lower().eq('none')]
     df = df[~df['job'].str.lower().eq('none')]
     df = df[(df['source'] != '') & (df['target'] != '') & (df['job'] != '')]
 
-    # Create 2 types of edges: source -> job and job -> target
-    edges = []
-    for _, row in df.iterrows():
-        edges.append((row["source"], row["job"]))
-        edges.append((row["job"], row["target"]))
+    # Prepare node lists
+    all_tables = sorted(set(df['source']).union(df['target']))
+    all_jobs = sorted(set(df['job']))
 
-    all_nodes = set(df["source"]) | set(df["target"]) | set(df["job"])
+    # Sidebar: select type then node
+    st.sidebar.header("Explore Dependencies")
+    node_type = st.sidebar.radio("Select Type:", ["Table", "Job"], index=0)
+    if node_type == "Table":
+        selected_node = st.sidebar.selectbox("Select a table:", all_tables, key="table_select").strip()
+    else:
+        selected_node = st.sidebar.selectbox("Select a job:", all_jobs, key="job_select").strip()
 
-    @st.cache_data(show_spinner=False)
-    def get_valid_nodes():
-        return sorted([n for n in all_nodes if isinstance(n, str) and n.strip() and n.lower() != 'none'])
+    direction = st.sidebar.radio(
+        "Dependency Direction:", ["Downstream (Impact)", "Upstream (Lineage)"], key="direction_radio"
+    )
+    downstream = direction.startswith("Downstream")
 
-    def render_sidebar():
-        st.sidebar.header("Explore Dependencies")
-        selected_node = st.sidebar.selectbox(
-            "Select a table/job/report:",
-            options=get_valid_nodes(),
-            index=0,
-            key="node_select",
-            format_func=lambda x: x,
-        )
-        direction = st.sidebar.radio(
-            "Dependency Direction",
-            ["Downstream (Impact)", "Upstream (Lineage)"],
-            key="direction_radio"
-        )
-        return selected_node.strip(), direction
+    if not selected_node:
+        st.info("Please select a node to view dependencies.")
+        return
 
-    selected_node, direction = render_sidebar()
-
-    # Build graph
+    # Build directed graph
     g = nx.DiGraph()
-    for src, tgt in edges:
-        g.add_edge(src, tgt)
+    for _, row in df.iterrows():
+        g.add_edge(row['source'], row['job'])
+        g.add_edge(row['job'], row['target'])
 
-    def get_subgraph(graph, start_node, direction="downstream"):
+    # Traverse to build subgraph edges
+    def get_sub_edges(start, downstream=True):
         visited = set()
-        to_visit = [start_node.strip()]
-        sub_edges = []
-        while to_visit:
-            current = to_visit.pop()
-            if current in visited:
+        stack = [start]
+        edges = []
+        while stack:
+            cur = stack.pop()
+            if cur in visited:
                 continue
-            visited.add(current)
+            visited.add(cur)
             try:
-                nbrs = graph.successors(current) if direction == "downstream" else graph.predecessors(current)
-                for n in nbrs:
-                    edge = (current, n) if direction == "downstream" else (n, current)
-                    sub_edges.append(edge)
-                    to_visit.append(n)
+                nbrs = g.successors(cur) if downstream else g.predecessors(cur)
             except nx.NetworkXError:
                 continue
-        return sub_edges
+            for n in nbrs:
+                edges.append((cur, n) if downstream else (n, cur))
+                stack.append(n)
+        return edges
 
-    selected_raw_edges = get_subgraph(
-        g,
-        selected_node,
-        direction="downstream" if direction.startswith("Down") else "upstream"
-    )
+    sub_edges = get_sub_edges(selected_node, downstream)
+    sub_nodes = {s for s, t in sub_edges} | {t for s, t in sub_edges}
 
-    # Filter nodes
-    filtered_nodes = set()
-    for src, tgt in selected_raw_edges:
-        filtered_nodes.add(src)
-        filtered_nodes.add(tgt)
-
-    # Render network
+    # PyVis network setup
     net = Network(height="750px", width="100%", directed=True, notebook=False)
     net.set_options(json.dumps({
         "nodes": {"size": 18, "font": {"size": 14, "multi": "html"}},
@@ -110,62 +93,43 @@ def main():
             "smooth": {"enabled": False},
             "color": {"color": "#A9A9A9"}
         },
-        "layout": {
-            "hierarchical": {
-                "enabled": True,
-                "direction": "UD",
-                "sortMethod": "directed"
-            }
-        },
+        "layout": {"hierarchical": {"enabled": True, "direction": "UD", "sortMethod": "directed"}},
         "physics": {"enabled": False},
-        "interaction": {
-            "navigationButtons": True,
-            "keyboard": True,
-            "dragNodes": True,
-            "dragView": True,
-            "zoomView": True
-        }
+        "interaction": {"navigationButtons": True, "keyboard": True, "dragNodes": True, "dragView": True, "zoomView": True}
     }, indent=2))
 
-    # Add nodes
-    for node in filtered_nodes:
-        node_type = "job" if node in df["job"].values else "table"
-        color = "lightblue" if node_type == "job" else "lightgreen"
-        net.add_node(node, label=node, color=color)
+    # Add nodes colored by type
+    for n in sub_nodes:
+        col = "lightblue" if n in all_jobs else "lightgreen"
+        net.add_node(n, label=n, color=col)
 
     # Add edges
-    for src, tgt in selected_raw_edges:
-        net.add_edge(src, tgt)
+    for s, t in sub_edges:
+        net.add_edge(s, t)
 
-    # Generate HTML
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp_file:
-        net.save_graph(tmp_file.name)
-        html_content = open(tmp_file.name, 'r', encoding='utf-8').read()
-        os.unlink(tmp_file.name)
+    # Render HTML
+    path = tempfile.NamedTemporaryFile(delete=False, suffix=".html").name
+    net.save_graph(path)
+    html = open(path, 'r', encoding='utf-8').read()
+    os.unlink(path)
+    components.html(html, height=800, scrolling=True)
 
-    if html_content:
-        components.html(html_content, height=800, scrolling=True)
-        with st.expander("Legend", expanded=True):
-            st.markdown("""
-            - 🟦 Jobs  
-            - 🟩 Tables
-            """)
+    # Legend
+    with st.expander("Legend", expanded=True):
+        st.markdown("""
+        - 🟦 Jobs  
+        - 🟩 Tables
+        """)
 
-    if not filtered_nodes:
-        st.warning("No connected nodes found for the selected input.")
+    # Display mapping
+    if not sub_edges:
+        st.warning("No dependencies found for selected node.")
     else:
-        filtered_df = df[df.apply(
-            lambda row: (
-                row['source'] in filtered_nodes and
-                row['target'] in filtered_nodes and
-                row['job'] in filtered_nodes
-            ), axis=1
-        )]
+        df_sub = df[df.apply(lambda r: r['source'] in sub_nodes and r['job'] in sub_nodes and r['target'] in sub_nodes, axis=1)]
         st.subheader("ETL Mapping Table")
-        st.dataframe(filtered_df[["JOBID", "PROJECT_NAME", "job", "source", "target"]])
+        st.dataframe(df_sub[["JOBID", "PROJECT_NAME", "job", "source", "target"]])
 
     st.write("✅ App finished rendering.")
-
 
 if __name__ == "__main__":
     main()
