@@ -70,7 +70,7 @@ def main():
 
     def get_subgraph(start: str, downstream_mode: bool = True):
         """Return list of edges reachable from *start* in chosen direction."""
-        visited, to_visit, sub_edges = set(), [start], []
+        visited, to_visit, sub_edges = set(), [start], set()
         while to_visit:
             cur = to_visit.pop()
             if cur in visited:
@@ -80,9 +80,9 @@ def main():
             for n in nbrs:
                 edge = (cur, n) if downstream_mode else (n, cur)
                 if edge in edge_owner:
-                    sub_edges.append(edge)
+                    sub_edges.add(edge)
                 to_visit.append(n)
-        return sub_edges
+        return list(sub_edges)
 
     selected_edges = get_subgraph(selected_node, downstream)
 
