@@ -31,19 +31,20 @@ def main():
     df = df.apply(lambda col: col.str.strip() if col.dtype == "object" else col)
 
     # drop empty rows
-    df = df.dropna(subset=["source", "target", "job"])
-    df = df[(df["source"] != "") & (df["target"] != "") & (df["job"] != "")]
+    df = df.dropna(subset=["source", "target", "job"]).loc[
+        lambda d: (d["source"] != "") & (d["target"] != "") & (d["job"] != "")
+    ]
 
-    # —— 2. Build deduplicated edge set ——
+    # —— 2. Build edge set and ownership ——
     edges_set = set()
     edge_owner = {}
     for _, row in df.iterrows():
-        src_job = (row["source"], row["job"])
-        job_tgt = (row["job"], row["target"])
-        edges_set.add(src_job)
-        edges_set.add(job_tgt)
-        edge_owner[src_job] = row["job"]
-        edge_owner[job_tgt] = row["job"]
+        e1 = (row["source"], row["job"])
+        e2 = (row["job"], row["target"])
+        edges_set.add(e1)
+        edges_set.add(e2)
+        edge_owner[e1] = row["job"]
+        edge_owner[e2] = row["job"]
     edges = list(edges_set)
 
     # —— 3. Node universe ——
@@ -51,9 +52,9 @@ def main():
 
     @st.cache_data(show_spinner=False)
     def get_valid_nodes():
-        return sorted([n for n in all_nodes if isinstance(n, str) and n.strip().lower() != "none"])
+        return sorted(n for n in all_nodes if isinstance(n, str) and n.strip().lower() != "none")
 
-    # —— 4. Define subgraph function ——
+    # —— 4. Prepare graph ——
     g = nx.DiGraph()
     g.add_edges_from(edges)
 
@@ -64,8 +65,8 @@ def main():
             if cur in visited:
                 continue
             visited.add(cur)
-            neighbors = g.successors(cur) if downstream else g.predecessors(cur)
-            for n in neighbors:
+            nbrs = g.successors(cur) if downstream else g.predecessors(cur)
+            for n in nbrs:
                 edge = (cur, n) if downstream else (n, cur)
                 if edge in edge_owner:
                     sub_edges.add(edge)
@@ -75,12 +76,9 @@ def main():
     # —— 5. Sidebar controls ——
     st.sidebar.header("Explore Dependencies")
     valid = get_valid_nodes()
-    valid.insert(0, "")  # placeholder for no selection
+    valid.insert(0, "")  # blank to start
     selected_node = st.sidebar.selectbox(
-        "Select a table/job/report:",
-        options=valid,
-        index=0,
-        key="node_select"
+        "Select a table/job/report:", options=valid, index=0, key="node_select"
     ).strip()
     downstream = st.sidebar.radio(
         "Dependency Direction",
@@ -88,34 +86,52 @@ def main():
         key="direction_radio"
     ).startswith("Down")
 
-    # —— 6. Determine edges & nodes ——
-    if selected_node == "":
-        # full graph
-        selected_edges = edges.copy()
-        filtered_nodes = {n for edge in edges for n in edge}
-        direct_edges = set()
-        directly_connected = set()
-    else:
-        selected_edges = get_subgraph(selected_node, downstream)
-        filtered_nodes = {s for s, _ in selected_edges}.union({t for _, t in selected_edges})
-        direct_edges = {(s, t) for s, t in selected_edges if s == selected_node or t == selected_node}
-        directly_connected = {t if s == selected_node else s for s, t in direct_edges}
+    # —— 6. Handle blank vs selected ——
+    if not selected_node:
+        st.info("Please select a table or job from the sidebar above to view its dependency graph.")
+        return
+
+    selected_edges = get_subgraph(selected_node, downstream)
+    filtered_nodes = {s for s, _ in selected_edges} | {t for _, t in selected_edges}
+    direct_edges = {(s, t) for s, t in selected_edges if s == selected_node or t == selected_node}
+    directly_connected = {t if s == selected_node else s for s, t in direct_edges}
 
     # —— 7. Build PyVis network ——
     net = Network(height="750px", width="100%", directed=True, notebook=False)
     net.set_options(json.dumps({
         "nodes": {"size": 18, "font": {"size": 14, "multi": "html"}},
-        "edges": {"arrows": {"to": {"enabled": True}}, "smooth": {"enabled": False}, "color": {"color": "#A9A9A9"}},
-        "layout": {"hierarchical": {"enabled": True, "direction": "UD", "sortMethod": "directed", "nodeSpacing": 150, "treeSpacing": 300, "levelSeparation": 200}},
+        "edges": {
+            "arrows": {"to": {"enabled": True}},
+            "smooth": {"enabled": False},
+            "color": {"color": "#A9A9A9"}
+        },
+        "layout": {
+            "hierarchical": {
+                "enabled": True,
+                "direction": "UD",
+                "sortMethod": "directed",
+                "nodeSpacing": 150,
+                "treeSpacing": 300,
+                "levelSeparation": 200
+            }
+        },
         "physics": {"enabled": False},
-        "interaction": {"navigationButtons": True, "keyboard": True, "dragNodes": True, "dragView": True, "zoomView": True, "tooltipDelay": 200, "multiselect": True}
+        "interaction": {
+            "navigationButtons": True,
+            "keyboard": True,
+            "dragNodes": True,
+            "dragView": True,
+            "zoomView": True,
+            "tooltipDelay": 200,
+            "multiselect": True
+        }
     }, indent=2))
 
     # add nodes
     for n in filtered_nodes:
         typ = "job" if n in df["job"].values else "table"
         color = "lightblue" if typ == "job" else "lightgreen"
-        font = {"size": 14, "bold": (n == selected_node or n in directly_connected)}
+        font = {"size": 14, "bold": (n in directly_connected or n == selected_node)}
         net.add_node(n, label=n, color=color, font=font)
 
     # add edges
@@ -148,12 +164,9 @@ def main():
         - 🟩 Tables
         """)
 
-    if filtered_nodes:
-        subdf = df[df.apply(lambda r: r["source"] in filtered_nodes and r["target"] in filtered_nodes and r["job"] in filtered_nodes, axis=1)]
-        st.subheader("ETL Mapping Table")
-        st.dataframe(subdf[["JOBID", "PROJECT_NAME", "job", "source", "target"]])
-    else:
-        st.warning("No connected nodes found for the selected input.")
+    subdf = df[df.apply(lambda r: r["source"] in filtered_nodes and r["target"] in filtered_nodes and r["job"] in filtered_nodes, axis=1)]
+    st.subheader("ETL Mapping Table")
+    st.dataframe(subdf[["JOBID", "PROJECT_NAME", "job", "source", "target"]])
 
     st.write("✅ App finished rendering.")
 
