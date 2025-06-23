@@ -109,35 +109,38 @@ def main():
     # PyVis network setup
     net = Network(height="600px", width="100%", directed=True, notebook=False)
     net.set_options(json.dumps({
-    "nodes": {"size": 18, "font": {"size": 14, "multi": "html"}},
-    "edges": {
-        "arrows": {"to": {"enabled": True}},
-        "smooth": {"enabled": False},
-        "color": {"color": "#A9A9A9"}
-    },
-    "layout": {
-        "hierarchical": {
-            "enabled": True,
-            "direction": "LR",
-            "sortMethod": "directed",
-            "levelSeparation": 100,
-            "nodeSpacing": 150,
-            "treeSpacing": 200,
-            "blockShifting": True,
-            "edgeMinimization": True,
-            "parentCentralization": True
+        "nodes": {"size": 18, "font": {"size": 14, "multi": "html"}},
+        "edges": {
+            "arrows": {"to": {"enabled": True}},
+            "smooth": {"enabled": False},
+            "color": {"color": "#A9A9A9"}
+        },
+        "layout": {
+            "hierarchical": {
+                "enabled": True,
+                "direction": "LR",
+                "sortMethod": "directed",
+                # Reduced spacings for better readability
+                "levelSeparation": 80,
+                "nodeSpacing": 80,
+                "treeSpacing": 80,
+                # Keep blocks but minimize edge crossing
+                "blockShifting": False,
+                "edgeMinimization": True,
+                "parentCentralization": False
+            }
+        },
+        "physics": {"enabled": False},
+        "interaction": {
+            "navigationButtons": True,
+            "keyboard": True,
+            # Fixed nodes to prevent floating
+            "dragNodes": False,
+            "dragView": True,
+            "zoomView": True,
+            "autoResize": True
         }
-    },
-    "physics": {"enabled": False},
-    "interaction": {
-        "navigationButtons": True,
-        "keyboard": True,
-        "dragNodes": False,
-        "dragView": True,
-        "zoomView": True,
-        "autoResize": True
-    }
-}, indent=2))
+    }, indent=2))
 
     # Add nodes colored by type
     for n in sub_nodes:
