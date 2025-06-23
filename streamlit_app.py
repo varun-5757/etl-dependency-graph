@@ -120,7 +120,7 @@ def main():
                 "enabled": True,
                 "direction": "UD",
                 "sortMethod": "directed",
-                "levelSeparation": 30,
+                "levelSeparation": 45,
                 "nodeSpacing": 45,
                 "treeSpacing": 45,
                 "blockShifting": True,
