@@ -120,12 +120,11 @@ def main():
                 "enabled": True,
                 "direction": "LR",
                 "sortMethod": "directed",
-                # Reduced spacings for better readability
-                "levelSeparation": 80,
-                "nodeSpacing": 80,
-                "treeSpacing": 80,
-                # Keep blocks but minimize edge crossing
-                "blockShifting": False,
+                # Tighter spacing for readability
+                "levelSeparation": 50,
+                "nodeSpacing": 60,
+                "treeSpacing": 60,
+                "blockShifting": True,
                 "edgeMinimization": True,
                 "parentCentralization": False
             }
@@ -134,7 +133,7 @@ def main():
         "interaction": {
             "navigationButtons": True,
             "keyboard": True,
-            # Fixed nodes to prevent floating
+            # Prevent nodes from floating
             "dragNodes": False,
             "dragView": True,
             "zoomView": True,
