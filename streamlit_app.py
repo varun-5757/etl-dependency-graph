@@ -1,3 +1,4 @@
+
 # etl_dependency_graph_streamlit_app.py
 import pandas as pd
 import networkx as nx
@@ -63,6 +64,8 @@ def main():
         "Dependency Direction:", ["Downstream (Impact)", "Upstream (Lineage)", "Both"], key="direction_radio"
     )
 
+    max_levels = st.sidebar.slider("Traversal Levels:", 1, 10, 3)
+
     if not selected_node:
         st.info("Please select a node to view dependencies.")
         return
@@ -76,14 +79,14 @@ def main():
     for job, tgt in df_tgt[['job', 'target']].itertuples(index=False):
         g.add_edge(job, tgt)
 
-    # Traverse to build subgraph edges
-    def get_sub_edges(start, downstream=True):
+    # Traverse to build subgraph edges with levels
+    def get_sub_edges(start, downstream=True, max_levels=3):
         visited = set()
-        stack = [start]
+        stack = [(start, 0)]
         sub_edges = []
         while stack:
-            cur = stack.pop()
-            if cur in visited:
+            cur, level = stack.pop()
+            if level >= max_levels or cur in visited:
                 continue
             visited.add(cur)
             try:
@@ -92,17 +95,17 @@ def main():
                 continue
             for n in nbrs:
                 sub_edges.append((cur, n) if downstream else (n, cur))
-                stack.append(n)
+                stack.append((n, level + 1))
         return sub_edges
 
     # Compute sub_edges based on direction
     if direction == "Both":
-        down_edges = get_sub_edges(selected_node, downstream=True)
-        up_edges = get_sub_edges(selected_node, downstream=False)
+        down_edges = get_sub_edges(selected_node, downstream=True, max_levels=max_levels)
+        up_edges = get_sub_edges(selected_node, downstream=False, max_levels=max_levels)
         sub_edges = list({*down_edges, *up_edges})
     else:
         downstream_flag = direction.startswith("Downstream")
-        sub_edges = get_sub_edges(selected_node, downstream=downstream_flag)
+        sub_edges = get_sub_edges(selected_node, downstream=downstream_flag, max_levels=max_levels)
 
     sub_nodes = {s for s, _ in sub_edges} | {t for _, t in sub_edges}
 
@@ -120,16 +123,13 @@ def main():
                 "enabled": True,
                 "direction": "UD",
                 "sortMethod": "directed",
-                "levelSeparation": 45,
-                "nodeSpacing": 45,
-                "treeSpacing": 45,
-                "blockShifting": True,
-                "edgeMinimization": True,
-                "parentCentralization": True
+                "levelSeparation": 40,
+                "nodeSpacing": 30,
+                "treeSpacing": 40
             }
         },
         "physics": {"enabled": False},
-        "interaction": {"navigationButtons": True, "keyboard": True, "dragNodes": True, "dragView": True, "zoomView": True, "autoResize": True}
+        "interaction": {"navigationButtons": True, "keyboard": True, "dragNodes": True, "dragView": True, "zoomView": True}
     }, indent=2))
 
     # Add nodes colored by type
@@ -155,18 +155,6 @@ def main():
         - 🟦 Jobs  
         - 🟩 Tables
         """)
-
-    # Display mapping table
-    if not sub_edges:
-        st.warning("No dependencies found for selected node.")
-    else:
-        df_map = df_src.merge(df_tgt, on="job", how="inner")
-        df_display = df_map[df_map.apply(
-            lambda r: r["source"] in sub_nodes and r["target"] in sub_nodes and r["job"] in sub_nodes,
-            axis=1
-        )]
-        st.subheader("ETL Mapping Table")
-        st.dataframe(df_display[["jobid", "project", "job", "source", "target"]])
 
     st.write("✅ App finished rendering.")
 
