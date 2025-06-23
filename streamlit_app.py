@@ -56,11 +56,17 @@ def main():
         st.info("Please select a node to view dependencies.")
         return
 
-    # Build directed graph
+    # Build directed graph with conditional edges
     g = nx.DiGraph()
     for _, row in df.iterrows():
-        g.add_edge(row['source'], row['job'])
-        g.add_edge(row['job'], row['target'])
+        src = row['source']
+        job = row['job']
+        tgt = row['target']
+        # always add source -> job
+        g.add_edge(src, job)
+        # only add job -> target if target is non-empty
+        if isinstance(tgt, str) and tgt.strip():
+            g.add_edge(job, tgt)
 
     # Traverse to build subgraph edges
     def get_sub_edges(start, downstream=True):
