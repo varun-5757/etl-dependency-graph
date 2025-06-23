@@ -27,13 +27,13 @@ def main():
         st.error(f"Failed to load data: {e}")
         return
 
-    # Strip whitespace and filter out empty or 'None' values
+        # Strip whitespace and filter out empty or 'None' values
     df = df.apply(lambda col: col.str.strip() if col.dtype == "object" else col)
-    df = df.dropna(subset=["source", "target", "job"] )
+    # Keep rows with valid source and job; allow blank/null targets
+    df = df.dropna(subset=["source", "job"] )
     df = df[~df['source'].str.lower().eq('none')]
-    df = df[~df['target'].str.lower().eq('none')]
     df = df[~df['job'].str.lower().eq('none')]
-    df = df[(df['source'] != '') & (df['target'] != '') & (df['job'] != '')]
+    df = df[(df['source'] != '') & (df['job'] != '')]
 
     # Prepare node lists
     all_tables = sorted(set(df['source']).union(df['target']))
