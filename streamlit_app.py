@@ -1,3 +1,4 @@
+```python
 # etl_dependency_graph_streamlit_app.py
 import pandas as pd
 import networkx as nx
@@ -109,38 +110,35 @@ def main():
     # PyVis network setup
     net = Network(height="600px", width="100%", directed=True, notebook=False)
     net.set_options(json.dumps({
-        "nodes": {"size": 18, "font": {"size": 14, "multi": "html"}},
-        "edges": {
-            "arrows": {"to": {"enabled": True}},
-            "smooth": {"enabled": False},
-            "color": {"color": "#A9A9A9"}
-        },
-        "layout": {
-            "hierarchical": {
-                "enabled": True,
-                # render left-to-right to reduce vertical span
-                "direction": "LR",
-                "sortMethod": "directed",
-                # tighten spacings
-                "levelSeparation": 150,
-                "nodeSpacing": 100,
-                "treeSpacing": 100,
-                # improve compactness
-                "blockShifting": True,
-                "edgeMinimization": True,
-                "parentCentralization": True
-            }
-        },
-        "physics": {"enabled": False},
-        "interaction": {
-            "navigationButtons": True,
-            "keyboard": True,
-            "dragNodes": True,
-            "dragView": True,
-            "zoomView": True,
-            "autoResize": True
+    "nodes": {"size": 18, "font": {"size": 14, "multi": "html"}},
+    "edges": {
+        "arrows": {"to": {"enabled": True}},
+        "smooth": {"enabled": False},
+        "color": {"color": "#A9A9A9"}
+    },
+    "layout": {
+        "hierarchical": {
+            "enabled": True,
+            "direction": "LR",
+            "sortMethod": "directed",
+            "levelSeparation": 100,
+            "nodeSpacing": 150,
+            "treeSpacing": 200,
+            "blockShifting": True,
+            "edgeMinimization": True,
+            "parentCentralization": True
         }
-    }, indent=2))
+    },
+    "physics": {"enabled": False},
+    "interaction": {
+        "navigationButtons": True,
+        "keyboard": True,
+        "dragNodes": False,
+        "dragView": True,
+        "zoomView": True,
+        "autoResize": True
+    }
+}, indent=2))
 
     # Add nodes colored by type
     for n in sub_nodes:
@@ -183,3 +181,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
