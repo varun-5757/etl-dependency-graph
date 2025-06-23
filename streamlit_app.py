@@ -17,12 +17,11 @@ def main():
     # Load datasets from two CSV files
     # ------------------------
     try:
-        # Only rename source and job in df_src; drop jobid/project to avoid conflicts
+        # Read source->job mapping
         df_src = pd.read_csv("Sources to Jobs.csv").rename(
             columns={"SOURCE_OBJECT_NAME": "source", "JOB_NAME": "job"}
-        )
-        df_src = df_src[["source", "job"]]
-        # Rename and keep jobid/project in df_tgt
+        )[["source", "job"]]
+        # Read job->target mapping, keep metadata
         df_tgt = pd.read_csv("Job to Targets.csv").rename(
             columns={
                 "JOB_NAME": "job",
@@ -30,7 +29,7 @@ def main():
                 "JOBID": "jobid",
                 "PROJECT_NAME": "project"
             }
-        )
+        )[["job", "target", "jobid", "project"]]
     except Exception as e:
         st.error(f"Failed to load data: {e}")
         return
@@ -40,18 +39,9 @@ def main():
         for col in df_.select_dtypes(include="object").columns:
             df_[col] = df_[col].str.strip()
 
-    # Filter out invalid rows (drop rows with empty source/job/target)
+    # Filter out invalid rows
     df_src = df_src[df_src["source"].astype(bool) & df_src["job"].astype(bool)]
     df_tgt = df_tgt[df_tgt["job"].astype(bool) & df_tgt["target"].astype(bool)]
-
-    # Prepare edges lists
-    edges = []
-    # source -> job edges
-    for _, row in df_src.iterrows():
-        edges.append((row["source"], row["job"]))
-    # job -> target edges
-    for _, row in df_tgt.iterrows():
-        edges.append((row["job"], row["target"]))
 
     # Prepare node lists
     all_tables = sorted(set(df_src["source"]).union(df_tgt["target"]))
@@ -80,13 +70,13 @@ def main():
     # Build directed graph
     g = nx.DiGraph()
     # add source->job edges
-    for src, job in df_src["source job"].itertuples(index=False):
+    for src, job in df_src[['source', 'job']].itertuples(index=False):
         g.add_edge(src, job)
     # add job->target edges
-    for job, tgt in df_tgt["job target"].itertuples(index=False):
+    for job, tgt in df_tgt[['job', 'target']].itertuples(index=False):
         g.add_edge(job, tgt)
 
-    # Function to traverse graph
+    # Traverse to build subgraph edges
     def get_sub_edges(start, downstream=True):
         visited = set()
         stack = [start]
@@ -158,7 +148,7 @@ def main():
     if not sub_edges:
         st.warning("No dependencies found for selected node.")
     else:
-        df_map = pd.merge(df_src, df_tgt, on="job", how="inner")
+        df_map = df_src.merge(df_tgt, on="job", how="inner")
         df_display = df_map[df_map.apply(
             lambda r: r["source"] in sub_nodes and r["target"] in sub_nodes and r["job"] in sub_nodes,
             axis=1
