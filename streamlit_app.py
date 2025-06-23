@@ -107,7 +107,7 @@ def main():
     sub_nodes = {s for s, _ in sub_edges} | {t for _, t in sub_edges}
 
     # PyVis network setup
-    net = Network(height="600px", width="100%", directed=True, notebook=False)
+    net = Network(height="750px", width="100%", directed=True, notebook=False)
     net.set_options(json.dumps({
         "nodes": {"size": 18, "font": {"size": 14, "multi": "html"}},
         "edges": {
@@ -118,27 +118,18 @@ def main():
         "layout": {
             "hierarchical": {
                 "enabled": True,
-                "direction": "LR",
+                "direction": "UD",
                 "sortMethod": "directed",
-                # Tighter spacing for readability
-                "levelSeparation": 50,
-                "nodeSpacing": 60,
-                "treeSpacing": 60,
+                "levelSeparation": 40,
+                "nodeSpacing": 30,
+                "treeSpacing": 40,
                 "blockShifting": True,
                 "edgeMinimization": True,
-                "parentCentralization": False
+                "parentCentralization": True
             }
         },
         "physics": {"enabled": False},
-        "interaction": {
-            "navigationButtons": True,
-            "keyboard": True,
-            # Prevent nodes from floating
-            "dragNodes": False,
-            "dragView": True,
-            "zoomView": True,
-            "autoResize": True
-        }
+        "interaction": {"navigationButtons": True, "keyboard": True, "dragNodes": True, "dragView": True, "zoomView": True, "autoResize": True}
     }, indent=2))
 
     # Add nodes colored by type
@@ -156,7 +147,7 @@ def main():
     with open(path, 'r', encoding='utf-8') as f:
         html = f.read()
     os.unlink(path)
-    components.html(html, height=700, scrolling=True)
+    components.html(html, height=800, scrolling=True)
 
     # Legend
     with st.expander("Legend", expanded=True):
