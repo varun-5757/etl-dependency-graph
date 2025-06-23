@@ -123,9 +123,9 @@ def main():
                 "enabled": True,
                 "direction": "UD",
                 "sortMethod": "directed",
-                "levelSeparation": 40,
-                "nodeSpacing": 30,
-                "treeSpacing": 40
+                "levelSeparation": 100,
+                "nodeSpacing": 50,
+                "treeSpacing": 50
             }
         },
         "physics": {"enabled": False},
