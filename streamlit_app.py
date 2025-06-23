@@ -115,9 +115,18 @@ def main():
             "smooth": {"enabled": False},
             "color": {"color": "#A9A9A9"}
         },
-        "layout": {"hierarchical": {"enabled": True, "direction": "UD", "sortMethod": "directed"}},
+        "layout": {
+            "hierarchical": {
+                "enabled": True,
+                "direction": "UD",
+                "sortMethod": "directed",
+                "levelSeparation": 150,
+                "nodeSpacing": 80,
+                "treeSpacing": 200
+            }
+        },
         "physics": {"enabled": False},
-        "interaction": {"navigationButtons": True, "keyboard": True, "dragNodes": True, "dragView": True, "zoomView": True}
+        "interaction": {"navigationButtons": True, "keyboard": True, "dragNodes": True, "dragView": True, "zoomView": True, "autoResize": True}
     }, indent=2))
 
     # Add nodes colored by type
