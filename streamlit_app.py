@@ -70,9 +70,8 @@ def main():
         ).strip()
 
     direction = st.sidebar.radio(
-        "Dependency Direction:", ["Downstream (Impact)", "Upstream (Lineage)"], key="direction_radio"
+        "Dependency Direction:", ["Downstream (Impact)", "Upstream (Lineage)", "Both"], key="direction_radio"
     )
-    downstream = direction.startswith("Downstream")
 
     if not selected_node:
         st.info("Please select a node to view dependencies.")
@@ -81,10 +80,10 @@ def main():
     # Build directed graph
     g = nx.DiGraph()
     # add source->job edges
-    for src, job in df_src[["source", "job"]].itertuples(index=False):
+    for src, job in df_src["source job"].itertuples(index=False):
         g.add_edge(src, job)
     # add job->target edges
-    for job, tgt in df_tgt[["job", "target"]].itertuples(index=False):
+    for job, tgt in df_tgt["job target"].itertuples(index=False):
         g.add_edge(job, tgt)
 
     # Function to traverse graph
@@ -106,7 +105,15 @@ def main():
                 stack.append(n)
         return sub_edges
 
-    sub_edges = get_sub_edges(selected_node, downstream)
+    # Compute sub_edges based on direction
+    if direction == "Both":
+        down_edges = get_sub_edges(selected_node, downstream=True)
+        up_edges = get_sub_edges(selected_node, downstream=False)
+        sub_edges = list({*down_edges, *up_edges})
+    else:
+        downstream_flag = direction.startswith("Downstream")
+        sub_edges = get_sub_edges(selected_node, downstream=downstream_flag)
+
     sub_nodes = {s for s, _ in sub_edges} | {t for _, t in sub_edges}
 
     # PyVis network setup
@@ -145,8 +152,7 @@ def main():
         st.markdown("""
         - 🟦 Jobs  
         - 🟩 Tables
-        """
-        )
+        """)
 
     # Display mapping table
     if not sub_edges:
