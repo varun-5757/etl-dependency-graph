@@ -1,4 +1,3 @@
-```python
 # etl_dependency_graph_streamlit_app.py
 import pandas as pd
 import networkx as nx
@@ -181,4 +180,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-```
