@@ -17,47 +17,57 @@ def main():
     # Load datasets from two CSV files
     # ------------------------
     try:
+        # Only rename source and job in df_src; drop jobid/project to avoid conflicts
         df_src = pd.read_csv("Sources to Jobs.csv").rename(
-            columns={"SOURCE_OBJECT_NAME": "source", "JOB_NAME": "job", "JOBID": "jobid", "PROJECT_NAME": "project"}
+            columns={"SOURCE_OBJECT_NAME": "source", "JOB_NAME": "job"}
         )
+        df_src = df_src[["source", "job"]]
+        # Rename and keep jobid/project in df_tgt
         df_tgt = pd.read_csv("Job to Targets.csv").rename(
-        columns={"JOB_NAME": "job", "TARGET_OBJECT_NAME": "target", "JOBID": "jobid", "PROJECT_NAME": "project"}
-    )
+            columns={
+                "JOB_NAME": "job",
+                "TARGET_OBJECT_NAME": "target",
+                "JOBID": "jobid",
+                "PROJECT_NAME": "project"
+            }
+        )
     except Exception as e:
         st.error(f"Failed to load data: {e}")
         return
 
-    # Clean whitespace
+    # Clean whitespace in all string columns
     for df_ in (df_src, df_tgt):
         for col in df_.select_dtypes(include="object").columns:
             df_[col] = df_[col].str.strip()
 
-    # Filter out invalid rows
-    df_src = df_src.dropna(subset=["source", "job"]) 
-    df_src = df_src[(df_src['source'] != '') & (df_src['job'] != '')]
-    df_tgt = df_tgt.dropna(subset=["job", "target"])
-    df_tgt = df_tgt[(df_tgt['job'] != '') & (df_tgt['target'] != '')]
+    # Filter out invalid rows (drop rows with empty source/job/target)
+    df_src = df_src[df_src["source"].astype(bool) & df_src["job"].astype(bool)]
+    df_tgt = df_tgt[df_tgt["job"].astype(bool) & df_tgt["target"].astype(bool)]
 
-    # Combine edges lists
+    # Prepare edges lists
     edges = []
-    # source -> job
+    # source -> job edges
     for _, row in df_src.iterrows():
-        edges.append((row['source'], row['job']))
-    # job -> target
+        edges.append((row["source"], row["job"]))
+    # job -> target edges
     for _, row in df_tgt.iterrows():
-        edges.append((row['job'], row['target']))
+        edges.append((row["job"], row["target"]))
 
     # Prepare node lists
-    all_tables = sorted(set(df_src['source']).union(df_tgt['target']))
-    all_jobs = sorted(set(df_src['job']).union(df_tgt['job']))
+    all_tables = sorted(set(df_src["source"]).union(df_tgt["target"]))
+    all_jobs = sorted(set(df_src["job"]).union(df_tgt["job"]))
 
     # Sidebar: select type then node
     st.sidebar.header("Explore Dependencies")
     node_type = st.sidebar.radio("Select Type:", ["Table", "Job"], index=0)
     if node_type == "Table":
-        selected_node = st.sidebar.selectbox("Select a table:", all_tables, key="table_select").strip()
+        selected_node = st.sidebar.selectbox(
+            "Select a table:", all_tables, key="table_select", index=0
+        ).strip()
     else:
-        selected_node = st.sidebar.selectbox("Select a job:", all_jobs, key="job_select").strip()
+        selected_node = st.sidebar.selectbox(
+            "Select a job:", all_jobs, key="job_select", index=0
+        ).strip()
 
     direction = st.sidebar.radio(
         "Dependency Direction:", ["Downstream (Impact)", "Upstream (Lineage)"], key="direction_radio"
@@ -70,13 +80,14 @@ def main():
 
     # Build directed graph
     g = nx.DiGraph()
-    for src, job in edges:
+    # add source->job edges
+    for src, job in df_src[["source", "job"]].itertuples(index=False):
         g.add_edge(src, job)
-    for job, tgt in edges:
-        # only source->job entries have job as second in tuple; skip duplicates
+    # add job->target edges
+    for job, tgt in df_tgt[["job", "target"]].itertuples(index=False):
         g.add_edge(job, tgt)
 
-    # Traverse to build subgraph edges
+    # Function to traverse graph
     def get_sub_edges(start, downstream=True):
         visited = set()
         stack = [start]
@@ -96,7 +107,7 @@ def main():
         return sub_edges
 
     sub_edges = get_sub_edges(selected_node, downstream)
-    sub_nodes = {s for s, t in sub_edges} | {t for s, t in sub_edges}
+    sub_nodes = {s for s, _ in sub_edges} | {t for _, t in sub_edges}
 
     # PyVis network setup
     net = Network(height="750px", width="100%", directed=True, notebook=False)
@@ -124,7 +135,8 @@ def main():
     # Render HTML
     path = tempfile.NamedTemporaryFile(delete=False, suffix=".html").name
     net.save_graph(path)
-    html = open(path, 'r', encoding='utf-8').read()
+    with open(path, 'r', encoding='utf-8') as f:
+        html = f.read()
     os.unlink(path)
     components.html(html, height=800, scrolling=True)
 
@@ -133,15 +145,18 @@ def main():
         st.markdown("""
         - 🟦 Jobs  
         - 🟩 Tables
-        """)
+        """
+        )
 
     # Display mapping table
     if not sub_edges:
         st.warning("No dependencies found for selected node.")
     else:
-        # merge source-job and job-target for display
-        df_map = pd.merge(df_src, df_tgt, on='job', how='inner')
-        df_display = df_map[df_map.apply(lambda r: r['source'] in sub_nodes and r['job'] in sub_nodes and r['target'] in sub_nodes, axis=1)]
+        df_map = pd.merge(df_src, df_tgt, on="job", how="inner")
+        df_display = df_map[df_map.apply(
+            lambda r: r["source"] in sub_nodes and r["target"] in sub_nodes and r["job"] in sub_nodes,
+            axis=1
+        )]
         st.subheader("ETL Mapping Table")
         st.dataframe(df_display[["jobid", "project", "job", "source", "target"]])
 
