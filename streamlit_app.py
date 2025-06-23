@@ -35,11 +35,13 @@ def main():
     df = df[~df['job'].str.lower().eq('none')]
     df = df[(df['source'] != '') & (df['job'] != '')]
 
-    # Prepare node lists
-    all_tables = sorted(set(df['source']).union(df['target']))
+        # Prepare node lists (exclude blank/null targets for table list)
+    source_tables = set(df['source'])
+    target_tables = {t for t in df['target'] if isinstance(t, str) and t.strip()}
+    all_tables = sorted(source_tables.union(target_tables))
     all_jobs = sorted(set(df['job']))
 
-    # Sidebar: select type then node
+    # Sidebar: select type then node: select type then node
     st.sidebar.header("Explore Dependencies")
     node_type = st.sidebar.radio("Select Type:", ["Table", "Job"], index=0)
     if node_type == "Table":
