@@ -1,3 +1,4 @@
+```python
 # etl_dependency_graph_streamlit_app.py
 import pandas as pd
 import networkx as nx
@@ -107,7 +108,7 @@ def main():
     sub_nodes = {s for s, _ in sub_edges} | {t for _, t in sub_edges}
 
     # PyVis network setup
-    net = Network(height="750px", width="100%", directed=True, notebook=False)
+    net = Network(height="600px", width="100%", directed=True, notebook=False)
     net.set_options(json.dumps({
         "nodes": {"size": 18, "font": {"size": 14, "multi": "html"}},
         "edges": {
@@ -118,11 +119,13 @@ def main():
         "layout": {
             "hierarchical": {
                 "enabled": True,
-                "direction": "UD",
+                # render left-to-right to reduce vertical span
+                "direction": "LR",
                 "sortMethod": "directed",
+                # tighten spacings
                 "levelSeparation": 100,
-                "nodeSpacing": 50,
-                "treeSpacing": 100
+                "nodeSpacing": 200,
+                "treeSpacing": 200
             }
         },
         "physics": {"enabled": False},
@@ -144,7 +147,7 @@ def main():
     with open(path, 'r', encoding='utf-8') as f:
         html = f.read()
     os.unlink(path)
-    components.html(html, height=800, scrolling=True)
+    components.html(html, height=700, scrolling=True)
 
     # Legend
     with st.expander("Legend", expanded=True):
@@ -170,3 +173,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
