@@ -1,4 +1,3 @@
-```python
 # etl_dependency_graph_streamlit_app.py
 import pandas as pd
 import networkx as nx
@@ -123,13 +122,24 @@ def main():
                 "direction": "LR",
                 "sortMethod": "directed",
                 # tighten spacings
-                "levelSeparation": 100,
-                "nodeSpacing": 200,
-                "treeSpacing": 200
+                "levelSeparation": 150,
+                "nodeSpacing": 100,
+                "treeSpacing": 100,
+                # improve compactness
+                "blockShifting": True,
+                "edgeMinimization": True,
+                "parentCentralization": True
             }
         },
         "physics": {"enabled": False},
-        "interaction": {"navigationButtons": True, "keyboard": True, "dragNodes": True, "dragView": True, "zoomView": True, "autoResize": True}
+        "interaction": {
+            "navigationButtons": True,
+            "keyboard": True,
+            "dragNodes": True,
+            "dragView": True,
+            "zoomView": True,
+            "autoResize": True
+        }
     }, indent=2))
 
     # Add nodes colored by type
